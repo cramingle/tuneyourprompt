@@ -162,6 +162,10 @@ app.post('/api/evaluate', async (req, res) => {
       
       console.log('Sending prompt to API:', enhancedPrompt);
       
+      // Set a longer timeout for the fetch request (30 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
       const apiResponse = await fetch(`${OLLAMA_API_URL}/ai/chat`, {
         method: 'POST',
         headers: {
@@ -172,7 +176,11 @@ app.post('/api/evaluate', async (req, res) => {
           prompt: enhancedPrompt,
           stream: false
         }),
+        signal: controller.signal
       });
+      
+      // Clear the timeout
+      clearTimeout(timeoutId);
       
       if (!apiResponse.ok) {
         throw new Error(`API responded with status: ${apiResponse.status}`);
@@ -229,7 +237,7 @@ app.post('/api/evaluate', async (req, res) => {
       
     } catch (error) {
       console.log('API error, using mock response:', error.message);
-      // If API is not available, generate a mock response
+      // If API is not available or times out, generate a mock response
       aiResponse = generateMockResponse(prompt, goal);
     }
     
@@ -260,13 +268,16 @@ app.post('/api/evaluate', async (req, res) => {
     
   } catch (error) {
     console.error('Error evaluating prompt:', error);
-    res.status(500).json({ error: 'Failed to evaluate prompt' });
+    res.status(500).json({ error: 'Failed to evaluate prompt', details: error.message });
   }
 });
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  // Check if API is available
+  // Check if API is available with a timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  
   fetch(`${OLLAMA_API_URL}/ai/chat`, {
     method: 'POST',
     headers: {
@@ -277,8 +288,10 @@ app.get('/api/health', (req, res) => {
       prompt: 'Hello',
       stream: false
     }),
+    signal: controller.signal
   })
     .then(async response => {
+      clearTimeout(timeoutId);
       if (response.ok) {
         try {
           // Try to parse the response to verify it's valid
@@ -296,6 +309,7 @@ app.get('/api/health', (req, res) => {
       }
     })
     .catch(error => {
+      clearTimeout(timeoutId);
       return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', error: error.message });
     });
 });

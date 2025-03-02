@@ -277,47 +277,78 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show loading overlay
         loadingOverlay.style.display = 'flex';
         
-        try {
-            // Call the API to evaluate the prompt
-            const response = await fetch('/api/evaluate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    prompt: promptText,
-                    goal: goalText
-                }),
-            });
-            
-            if (!response.ok) {
-                throw new Error('Failed to evaluate prompt');
-            }
-            
-            const data = await response.json();
-            
-            // Hide loading overlay
-            loadingOverlay.style.display = 'none';
-            
-            // Add AI response message with typing animation
-            addMessage('ai', data.aiResponse, '', true);
-            
-            // Add feedback message after a short delay
-            setTimeout(() => {
-                const feedbackElement = createFeedbackElement(data);
-                addMessage('system', feedbackElement, 'feedback-message');
+        // Track retries
+        let retries = 0;
+        const maxRetries = 2;
+        
+        async function attemptEvaluation() {
+            try {
+                // Call the API to evaluate the prompt
+                const response = await fetch('/api/evaluate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: promptText,
+                        goal: goalText
+                    }),
+                    // Set a longer timeout
+                    timeout: 30000
+                });
                 
-                // Move to step 3
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Server responded with status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Hide loading overlay
+                loadingOverlay.style.display = 'none';
+                
+                // Add AI response message with typing animation
+                addMessage('ai', data.aiResponse, '', true);
+                
+                // Add feedback message after a short delay
+                setTimeout(() => {
+                    const feedbackElement = createFeedbackElement(data);
+                    addMessage('system', feedbackElement, 'feedback-message');
+                    
+                    // Move to step 3
+                    updateProgress(3);
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                
+                if (retries < maxRetries) {
+                    retries++;
+                    console.log(`Retry attempt ${retries}/${maxRetries}`);
+                    
+                    // Update loading message
+                    const loadingText = document.querySelector('.loading-overlay p');
+                    loadingText.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
+                    
+                    // Wait a moment before retrying
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // Try again
+                    return attemptEvaluation();
+                }
+                
+                // Hide loading overlay
+                loadingOverlay.style.display = 'none';
+                
+                addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> An error occurred while evaluating your prompt: ${error.message}. Please try again later.`);
+                
+                // Move to step 3 anyway so user can try again
                 updateProgress(3);
-            }, 1000);
-            
-        } catch (error) {
-            console.error('Error:', error);
-            addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> An error occurred while evaluating your prompt. Please try again.');
-            
-            // Hide loading overlay
-            loadingOverlay.style.display = 'none';
+            }
         }
+        
+        // Start the evaluation process
+        attemptEvaluation();
     });
     
     tryAgainBtn.addEventListener('click', () => {
