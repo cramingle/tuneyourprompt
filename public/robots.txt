@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tuneyourprompt.vercel.app/sitemap.xml 

@@ -4,12 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TuneYourPrompt - Learn AI Prompting</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Learn how to craft effective AI prompts with TuneYourPrompt - a mobile-optimized tool to improve your AI prompting skills">
+    <meta name="keywords" content="AI prompts, prompt engineering, AI writing, prompt optimization, AI tools">
+    <meta name="author" content="TuneYourPrompt">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://tuneyourprompt.vercel.app/">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#7C4DFF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tuneyourprompt.vercel.app/">
+    <meta property="og:title" content="TuneYourPrompt - Learn AI Prompting">
+    <meta property="og:description" content="A mobile-optimized tool to help you craft better AI prompts and improve your results">
+    <meta property="og:image" content="https://tuneyourprompt.vercel.app/img/og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://tuneyourprompt.vercel.app/">
+    <meta property="twitter:title" content="TuneYourPrompt - Learn AI Prompting">
+    <meta property="twitter:description" content="A mobile-optimized tool to help you craft better AI prompts and improve your results">
+    <meta property="twitter:image" content="https://tuneyourprompt.vercel.app/img/og-image.jpg">
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <meta name="description" content="Learn how to craft effective AI prompts with TuneYourPrompt">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -83,10 +116,22 @@
         </div>
 
         <footer>
-            <p>POWERED BY OLLAMA METIS | <a href="https://github.com/ollama/ollama" target="_blank">LEARN MORE</a></p>
+            <p>POWERED BY AI | <a href="https://github.com/cramingle/tuneyourprompt" target="_blank">GITHUB</a></p>
         </footer>
     </div>
 
     <script src="js/app.js"></script>
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').then(registration => {
+                    console.log('ServiceWorker registration successful');
+                }).catch(error => {
+                    console.log('ServiceWorker registration failed:', error);
+                });
+            });
+        }
+    </script>
 </body>
 </html> 
