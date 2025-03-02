@@ -119,22 +119,37 @@ document.addEventListener('DOMContentLoaded', () => {
             goalInputArea.className = 'input-area';
             promptInputArea.className = 'input-area hidden';
             tryAgainArea.className = 'input-area hidden';
+            // Hide panels
+            analysisPanel.classList.add('hidden');
+            finalResultPanel.classList.add('hidden');
         } else if (step === 2) {
             goalInputArea.className = 'input-area hidden';
             promptInputArea.className = 'input-area';
             tryAgainArea.className = 'input-area hidden';
+            // Hide panels
+            analysisPanel.classList.add('hidden');
+            finalResultPanel.classList.add('hidden');
         } else if (step === 3) {
             goalInputArea.className = 'input-area hidden';
             promptInputArea.className = 'input-area hidden';
             tryAgainArea.className = 'input-area';
+            // Hide both panels in Result step - only show chat messages
+            analysisPanel.classList.add('hidden');
+            finalResultPanel.classList.add('hidden');
         } else if (step === 4) {
             goalInputArea.className = 'input-area hidden';
             promptInputArea.className = 'input-area hidden';
             tryAgainArea.className = 'input-area hidden';
+            // Show analysis panel
+            analysisPanel.classList.remove('hidden');
+            finalResultPanel.classList.add('hidden');
         } else if (step === 5) {
             goalInputArea.className = 'input-area hidden';
             promptInputArea.className = 'input-area hidden';
-            tryAgainArea.className = 'input-area hidden';
+            tryAgainArea.className = 'input-area';
+            // Show final result panel
+            analysisPanel.classList.add('hidden');
+            finalResultPanel.classList.remove('hidden');
         }
     }
     
@@ -229,7 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Add analyze button to the try-again-area
                 const analyzeBtn = document.createElement('button');
                 analyzeBtn.className = 'analyze-button';
-                analyzeBtn.innerHTML = '<i class="fas fa-chart-line fa-xs"></i> ANALYZE THIS PROMPT';
+                analyzeBtn.innerHTML = '<i class="fas fa-chart-line"></i>';
+                analyzeBtn.title = 'Analyze This Prompt';
                 analyzeBtn.id = 'analyze-prompt-btn';
                 analyzeBtn.addEventListener('click', () => {
                     // Update analysis panel with the data
@@ -249,6 +265,65 @@ document.addEventListener('DOMContentLoaded', () => {
                 const buttonRow = document.createElement('div');
                 buttonRow.className = 'button-row';
                 buttonRow.appendChild(analyzeBtn);
+                
+                // Create Try Again button
+                const tryAgainBtn = document.createElement('button');
+                tryAgainBtn.className = 'try-again-button';
+                tryAgainBtn.innerHTML = '<i class="fas fa-redo"></i>';
+                tryAgainBtn.title = 'Try Again';
+                tryAgainBtn.addEventListener('click', () => {
+                    // Clear the prompt input
+                    promptInput.value = '';
+                    
+                    // Add system message
+                    addMessage('system', '<i class="fas fa-redo fa-xs"></i> Let\'s try another prompt for the same goal.');
+                    
+                    // Hide panels if they're open
+                    analysisPanel.classList.add('hidden');
+                    finalResultPanel.classList.add('hidden');
+                    
+                    // Move back to step 2
+                    updateProgress(2);
+                    
+                    // Focus on prompt input
+                    promptInput.focus();
+                });
+                
+                // Create Start Over button
+                const startOverBtn = document.createElement('button');
+                startOverBtn.className = 'start-over-button';
+                startOverBtn.innerHTML = '<i class="fas fa-sync"></i>';
+                startOverBtn.title = 'Start Over';
+                startOverBtn.addEventListener('click', () => {
+                    // Confirm before starting over
+                    if (confirm('Are you sure you want to start over with a new goal?')) {
+                        // Clear inputs
+                        goalInput.value = '';
+                        promptInput.value = '';
+                        
+                        // Hide panels if they're open
+                        analysisPanel.classList.add('hidden');
+                        finalResultPanel.classList.add('hidden');
+                        
+                        // Clear chat messages except the first welcome message
+                        while (chatMessages.children.length > 1) {
+                            chatMessages.removeChild(chatMessages.lastChild);
+                        }
+                        
+                        // Add system message
+                        addMessage('system', '<i class="fas fa-sync fa-xs"></i> Let\'s start over with a new goal.');
+                        
+                        // Move back to step 1
+                        updateProgress(1);
+                        
+                        // Focus on goal input
+                        goalInput.focus();
+                    }
+                });
+                
+                // Add buttons to the row
+                buttonRow.appendChild(tryAgainBtn);
+                buttonRow.appendChild(startOverBtn);
                 
                 tryAgainArea.appendChild(buttonRow);
                 
@@ -592,7 +667,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Create Try Again button
                 const tryAgainBtn = document.createElement('button');
                 tryAgainBtn.className = 'try-again-button';
-                tryAgainBtn.innerHTML = '<i class="fas fa-redo fa-xs"></i> TRY AGAIN';
+                tryAgainBtn.innerHTML = '<i class="fas fa-redo"></i>';
+                tryAgainBtn.title = 'Try Again';
                 tryAgainBtn.addEventListener('click', () => {
                     // Clear the prompt input
                     promptInput.value = '';
@@ -614,7 +690,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Create Start Over button
                 const startOverBtn = document.createElement('button');
                 startOverBtn.className = 'start-over-button';
-                startOverBtn.innerHTML = '<i class="fas fa-sync fa-xs"></i> START OVER';
+                startOverBtn.innerHTML = '<i class="fas fa-sync"></i>';
+                startOverBtn.title = 'Start Over';
                 startOverBtn.addEventListener('click', () => {
                     // Confirm before starting over
                     if (confirm('Are you sure you want to start over with a new goal?')) {

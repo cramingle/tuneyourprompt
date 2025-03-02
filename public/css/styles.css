@@ -409,8 +409,8 @@ textarea::placeholder {
 .send-button {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     color: white;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -428,29 +428,29 @@ textarea::placeholder {
 }
 
 .send-button i {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
 }
 
 /* Button styles */
 .button-row {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     justify-content: center;
 }
 
 button {
-    padding: 10px 16px;
+    padding: 10px;
     border: none;
-    border-radius: 6px;
+    border-radius: 50%;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
 }
 
 .try-again-button {
@@ -473,6 +473,52 @@ button {
 
 .start-over-button:hover {
     background-color: #333333;
+}
+
+.analyze-button {
+    background: linear-gradient(135deg, var(--secondary-color), #00B8D4);
+    color: #121212;
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+}
+
+.analyze-button:hover {
+    background: linear-gradient(135deg, #00B8D4, var(--secondary-color));
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+}
+
+.use-improved-prompt {
+    background: linear-gradient(135deg, var(--success-color), #00C853);
+    color: #121212;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 15px auto 0;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.3);
+    transition: var(--transition);
+}
+
+.use-improved-prompt:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(0, 230, 118, 0.5);
+}
+
+.close-analysis, .close-final-result {
+    background: transparent;
+    color: var(--light-text);
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+}
+
+.close-analysis:hover, .close-final-result:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
 }
 
 /* Loading overlay */

@@ -89,8 +89,8 @@
                     <div class="input-label"><i class="fas fa-bullseye fa-xs"></i> WHAT DO YOU WANT THE AI TO CREATE?</div>
                     <div class="input-container">
                         <textarea id="goal-input" placeholder="Example: A funny story about a pirate"></textarea>
-                        <button class="send-button" id="goal-next">
-                            <i class="fas fa-paper-plane fa-xs"></i>
+                        <button class="send-button" id="goal-next" title="Submit Goal">
+                            <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
                 </div>
@@ -99,8 +99,8 @@
                     <div class="input-label"><i class="fas fa-pen-fancy fa-xs"></i> WRITE YOUR PROMPT</div>
                     <div class="input-container">
                         <textarea id="prompt-input" placeholder="Example: Write a story"></textarea>
-                        <button class="send-button" id="prompt-next">
-                            <i class="fas fa-paper-plane fa-xs"></i>
+                        <button class="send-button" id="prompt-next" title="Submit Prompt">
+                            <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
                 </div>
@@ -114,7 +114,7 @@
         <div class="analysis-panel hidden" id="analysis-panel">
             <div class="analysis-header">
                 <div class="analysis-title">PROMPT ANALYSIS</div>
-                <button class="close-analysis" id="close-analysis"><i class="fas fa-times fa-xs"></i></button>
+                <button class="close-analysis" id="close-analysis" title="Close Analysis"><i class="fas fa-times"></i></button>
             </div>
             <div class="match-indicator">
                 <div class="match-label">MATCH</div>
@@ -157,17 +157,17 @@
             </div>
             <div class="improved-prompt">
                 <div class="improved-prompt-header">
-                    <i class="fas fa-magic fa-xs"></i> IMPROVED PROMPT
+                    <i class="fas fa-magic"></i> IMPROVED PROMPT
                 </div>
                 <div class="improved-prompt-text" id="improved-prompt-text">-</div>
-                <button class="use-improved-prompt" id="use-improved-prompt">USE THIS PROMPT</button>
+                <button class="use-improved-prompt" id="use-improved-prompt" title="Use This Prompt"><i class="fas fa-check"></i></button>
             </div>
         </div>
 
         <div class="final-result-panel hidden" id="final-result-panel">
             <div class="final-result-header">
                 <div class="final-result-title">FINAL RESULT</div>
-                <button class="close-final-result" id="close-final-result"><i class="fas fa-times fa-xs"></i></button>
+                <button class="close-final-result" id="close-final-result" title="Close Final Result"><i class="fas fa-times"></i></button>
             </div>
             <div class="final-result-text" id="final-result-text">-</div>
         </div>
