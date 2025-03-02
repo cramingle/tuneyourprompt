@@ -780,6 +780,83 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Function to add Try Again and Start Over buttons for the final step
+    function addFinalStepButtons() {
+        // Add Try Again and Start Over buttons to the try-again-area
+        const tryAgainArea = document.getElementById('try-again-area');
+        tryAgainArea.innerHTML = '';
+        
+        const buttonRow = document.createElement('div');
+        buttonRow.className = 'button-row';
+        
+        // Create Try Again button
+        const tryAgainBtn = document.createElement('button');
+        tryAgainBtn.className = 'try-again-button';
+        tryAgainBtn.innerHTML = '<i class="fas fa-redo"></i>';
+        tryAgainBtn.title = 'Try Again';
+        tryAgainBtn.addEventListener('click', () => {
+            // Clear the prompt input
+            promptInput.value = '';
+            
+            // Add system message
+            addMessage('system', '<i class="fas fa-redo fa-xs"></i> Let\'s try another prompt for the same goal.');
+            
+            // Hide panels if they're open
+            analysisPanel.classList.add('hidden');
+            finalResultPanel.classList.add('hidden');
+            
+            // Move back to step 2
+            updateProgress(2);
+            
+            // Focus on prompt input
+            promptInput.focus();
+        });
+        
+        // Create Start Over button
+        const startOverBtn = document.createElement('button');
+        startOverBtn.className = 'start-over-button';
+        startOverBtn.innerHTML = '<i class="fas fa-sync"></i>';
+        startOverBtn.title = 'Start Over';
+        startOverBtn.addEventListener('click', () => {
+            // Confirm before starting over
+            if (confirm('Are you sure you want to start over with a new goal?')) {
+                // Clear inputs
+                goalInput.value = '';
+                promptInput.value = '';
+                
+                // Hide panels if they're open
+                analysisPanel.classList.add('hidden');
+                finalResultPanel.classList.add('hidden');
+                
+                // Clear chat messages except the first welcome message
+                while (chatMessages.children.length > 1) {
+                    chatMessages.removeChild(chatMessages.lastChild);
+                }
+                
+                // Add system message
+                addMessage('system', '<i class="fas fa-sync fa-xs"></i> Let\'s start over with a new goal.');
+                
+                // Move back to step 1
+                updateProgress(1);
+                
+                // Focus on goal input
+                goalInput.focus();
+            }
+        });
+        
+        // Create a left side container for try again and start over buttons
+        const leftButtonsContainer = document.createElement('div');
+        leftButtonsContainer.className = 'left-buttons';
+        leftButtonsContainer.appendChild(tryAgainBtn);
+        leftButtonsContainer.appendChild(startOverBtn);
+        
+        // Add the left buttons container to the button row
+        buttonRow.appendChild(leftButtonsContainer);
+        
+        // We don't need the right buttons container here since we're in the final step
+        tryAgainArea.appendChild(buttonRow);
+    }
+    
     // Add event listener for "Use This Prompt" button
     const useImprovedPromptBtn = document.getElementById('use-improved-prompt');
     if (useImprovedPromptBtn) {
@@ -887,79 +964,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update progress to step 5 (Final)
                 updateProgress(5);
                 
-                // Add Try Again and Start Over buttons to the try-again-area
-                const tryAgainArea = document.getElementById('try-again-area');
-                tryAgainArea.innerHTML = '';
-                
-                const buttonRow = document.createElement('div');
-                buttonRow.className = 'button-row';
-                
-                // Create Try Again button
-                const tryAgainBtn = document.createElement('button');
-                tryAgainBtn.className = 'try-again-button';
-                tryAgainBtn.innerHTML = '<i class="fas fa-redo"></i>';
-                tryAgainBtn.title = 'Try Again';
-                tryAgainBtn.addEventListener('click', () => {
-                    // Clear the prompt input
-                    promptInput.value = '';
-                    
-                    // Add system message
-                    addMessage('system', '<i class="fas fa-redo fa-xs"></i> Let\'s try another prompt for the same goal.');
-                    
-                    // Hide panels if they're open
-                    analysisPanel.classList.add('hidden');
-                    finalResultPanel.classList.add('hidden');
-                    
-                    // Move back to step 2
-                    updateProgress(2);
-                    
-                    // Focus on prompt input
-                    promptInput.focus();
-                });
-                
-                // Create Start Over button
-                const startOverBtn = document.createElement('button');
-                startOverBtn.className = 'start-over-button';
-                startOverBtn.innerHTML = '<i class="fas fa-sync"></i>';
-                startOverBtn.title = 'Start Over';
-                startOverBtn.addEventListener('click', () => {
-                    // Confirm before starting over
-                    if (confirm('Are you sure you want to start over with a new goal?')) {
-                        // Clear inputs
-                        goalInput.value = '';
-                        promptInput.value = '';
-                        
-                        // Hide panels if they're open
-                        analysisPanel.classList.add('hidden');
-                        finalResultPanel.classList.add('hidden');
-                        
-                        // Clear chat messages except the first welcome message
-                        while (chatMessages.children.length > 1) {
-                            chatMessages.removeChild(chatMessages.lastChild);
-                        }
-                        
-                        // Add system message
-                        addMessage('system', '<i class="fas fa-sync fa-xs"></i> Let\'s start over with a new goal.');
-                        
-                        // Move back to step 1
-                        updateProgress(1);
-                        
-                        // Focus on goal input
-                        goalInput.focus();
-                    }
-                });
-                
-                // Create a left side container for try again and start over buttons
-                const leftButtonsContainer = document.createElement('div');
-                leftButtonsContainer.className = 'left-buttons';
-                leftButtonsContainer.appendChild(tryAgainBtn);
-                leftButtonsContainer.appendChild(startOverBtn);
-                
-                // Add the left buttons container to the button row
-                buttonRow.appendChild(leftButtonsContainer);
-                
-                // We don't need the right buttons container here since we're in the final step
-                tryAgainArea.appendChild(buttonRow);
+                // Add Try Again and Start Over buttons
+                addFinalStepButtons();
                 
             } catch (error) {
                 console.error('Error generating response:', error);
