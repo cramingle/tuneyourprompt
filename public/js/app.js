@@ -1120,11 +1120,16 @@ Please respond to the user's new message, taking into account the context of the
     // Add CSS for the chat separator
     const style = document.createElement('style');
     style.textContent = `
+    :root {
+        --purple-accent: #8a2be2;
+        --purple-hover: #7722c9;
+    }
+    
     .chat-separator {
         display: flex;
         align-items: center;
         text-align: center;
-        margin: 15px 0;
+        margin: 8px 0;
     }
 
     .chat-separator::before,
@@ -1135,8 +1140,8 @@ Please respond to the user's new message, taking into account the context of the
     }
 
     .chat-separator span {
-        padding: 0 8px;
-        font-size: 0.7rem;
+        padding: 0 5px;
+        font-size: 0.6rem;
         text-transform: uppercase;
         letter-spacing: 1px;
         color: var(--light-text);
@@ -1146,35 +1151,35 @@ Please respond to the user's new message, taking into account the context of the
     
     /* Continue Chat Button Styles */
     .continue-chat-button {
-        background-color: var(--accent-color);
+        background-color: var(--purple-accent);
         color: white;
         border: none;
         border-radius: 50%;
-        width: 24px;
-        height: 24px;
+        width: 18px;
+        height: 18px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         transition: all 0.2s ease;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-        font-size: 0.7rem;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        font-size: 0.6rem;
     }
     
     .continue-chat-button:hover {
-        background-color: var(--accent-hover);
+        background-color: var(--purple-hover);
         transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     }
     
     /* Chat Input Area Styles */
     .chat-input-area {
         display: flex;
-        margin-top: 8px;
+        margin-top: 5px;
         background-color: var(--input-bg);
-        border-radius: 6px;
-        padding: 5px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+        padding: 3px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
     
     #continue-chat-input {
@@ -1183,141 +1188,209 @@ Please respond to the user's new message, taking into account the context of the
         background-color: transparent;
         color: var(--text-color);
         font-family: inherit;
-        font-size: 0.9rem;
-        padding: 5px;
-        min-height: 30px;
+        font-size: 0.7rem;
+        padding: 3px;
+        min-height: 20px;
         resize: vertical;
         outline: none;
     }
     
     #send-chat-btn {
-        background-color: var(--accent-color);
+        background-color: var(--purple-accent);
         color: white;
         border: none;
         border-radius: 50%;
-        width: 24px;
-        height: 24px;
+        width: 18px;
+        height: 18px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         transition: all 0.2s ease;
-        margin-left: 5px;
+        margin-left: 3px;
         align-self: flex-end;
-        font-size: 0.7rem;
+        font-size: 0.6rem;
     }
     
     #send-chat-btn:hover {
-        background-color: var(--accent-hover);
+        background-color: var(--purple-hover);
     }
     
     /* Make all buttons in input area smaller */
     .try-again-button, .start-over-button, .analyze-button {
-        width: 24px;
-        height: 24px;
-        font-size: 0.7rem;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        width: 18px;
+        height: 18px;
+        font-size: 0.6rem;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        background-color: var(--purple-accent);
+    }
+    
+    .try-again-button:hover, .start-over-button:hover, .analyze-button:hover {
+        background-color: var(--purple-hover);
     }
     
     /* Adjust button spacing */
     .button-row {
-        gap: 5px;
+        gap: 3px;
         display: flex;
         justify-content: space-between;
     }
     
     .left-buttons, .right-buttons {
-        gap: 5px;
+        gap: 3px;
         display: flex;
     }
     
     /* Make analysis panel much smaller */
     #analysis-panel {
-        max-width: 80%;
-        max-height: 70vh;
+        max-width: 70%;
+        max-height: 60vh;
         width: auto;
-        padding: 10px;
-        font-size: 0.8rem;
-        border-radius: 6px;
+        padding: 6px;
+        font-size: 0.7rem;
+        border-radius: 4px;
+        border: 1px solid var(--purple-accent);
     }
     
     #analysis-panel h2 {
-        font-size: 1rem;
-        margin-bottom: 8px;
+        font-size: 0.8rem;
+        margin-bottom: 5px;
+        color: var(--purple-accent);
     }
     
     #analysis-panel .tab-buttons {
-        margin-bottom: 8px;
+        margin-bottom: 5px;
     }
     
     #analysis-panel .tab-button {
-        padding: 3px 6px;
-        font-size: 0.7rem;
-        border-radius: 3px;
-    }
-    
-    #analysis-panel .metric-bar {
-        height: 5px;
-        margin: 3px 0;
+        padding: 2px 4px;
+        font-size: 0.6rem;
         border-radius: 2px;
     }
     
+    #analysis-panel .tab-button.active {
+        background-color: var(--purple-accent);
+    }
+    
+    #analysis-panel .metric-bar {
+        height: 3px;
+        margin: 2px 0;
+        border-radius: 1px;
+    }
+    
+    #analysis-panel .metric-bar-fill {
+        background-color: var(--purple-accent);
+    }
+    
     #analysis-panel .metric-info {
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
     
     #analysis-panel .metric-label {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
     }
     
     #analysis-panel .metric-score {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
+        color: var(--purple-accent);
     }
     
     #analysis-panel .metric-feedback {
-        font-size: 0.75rem;
-        margin-top: 3px;
+        font-size: 0.65rem;
+        margin-top: 2px;
     }
     
     #analysis-panel .improved-prompt-section {
-        margin-top: 8px;
+        margin-top: 5px;
     }
     
     #analysis-panel #improved-prompt-text {
-        font-size: 0.8rem;
-        padding: 5px;
-        border-radius: 3px;
+        font-size: 0.7rem;
+        padding: 3px;
+        border-radius: 2px;
+        border: 1px solid var(--purple-accent);
     }
     
     #analysis-panel #use-improved-prompt {
-        padding: 3px 6px;
-        font-size: 0.7rem;
-        margin-top: 5px;
-        border-radius: 3px;
+        padding: 2px 4px;
+        font-size: 0.6rem;
+        margin-top: 3px;
+        border-radius: 2px;
+        background-color: var(--purple-accent);
+    }
+    
+    #analysis-panel #use-improved-prompt:hover {
+        background-color: var(--purple-hover);
     }
     
     #analysis-panel .close-button {
-        top: 5px;
-        right: 5px;
-        width: 18px;
-        height: 18px;
-        font-size: 0.7rem;
+        top: 3px;
+        right: 3px;
+        width: 14px;
+        height: 14px;
+        font-size: 0.6rem;
         border-radius: 50%;
+        background-color: var(--purple-accent);
+    }
+    
+    #analysis-panel .close-button:hover {
+        background-color: var(--purple-hover);
     }
     
     /* Make all input areas more compact */
     .input-area {
-        padding: 5px;
+        padding: 3px;
     }
     
     .input-area textarea {
-        padding: 5px;
-        font-size: 0.9rem;
+        padding: 3px;
+        font-size: 0.7rem;
     }
     
     .input-area button {
-        padding: 5px 10px;
-        font-size: 0.8rem;
+        padding: 3px 6px;
+        font-size: 0.7rem;
+        background-color: var(--purple-accent);
+    }
+    
+    .input-area button:hover {
+        background-color: var(--purple-hover);
+    }
+    
+    /* Make message bubbles smaller */
+    .message {
+        padding: 5px;
+        margin: 3px 0;
+        max-width: 85%;
+        font-size: 0.7rem;
+    }
+    
+    /* Adjust progress bar */
+    .progress-bar {
+        height: 3px;
+    }
+    
+    .progress-fill {
+        background-color: var(--purple-accent);
+    }
+    
+    /* Make step indicators smaller */
+    .step-indicator {
+        font-size: 0.6rem;
+    }
+    
+    /* Adjust main container padding */
+    .container {
+        padding: 5px;
+    }
+    
+    /* Make header smaller */
+    .app-header h1 {
+        font-size: 1rem;
+    }
+    
+    .app-header p {
+        font-size: 0.7rem;
     }
     `;
     document.head.appendChild(style);
