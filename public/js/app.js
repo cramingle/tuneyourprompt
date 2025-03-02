@@ -247,16 +247,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     clarityScore: data.qualityAnalysis?.clarity?.score || 0,
                     detailScore: data.qualityAnalysis?.detail?.score || 0,
                     relevanceScore: data.qualityAnalysis?.relevance?.score || 0,
-                    improvedPrompt: data.improvedPrompt || '',
-                    clarityFeedback: data.qualityAnalysis?.clarity?.feedback || 'No clarity feedback available.',
-                    detailFeedback: data.qualityAnalysis?.detail?.feedback || 'No detail feedback available.',
-                    relevanceFeedback: data.qualityAnalysis?.relevance?.feedback || 'No relevance feedback available.'
+                    clarityFeedback: data.qualityAnalysis?.clarity?.feedback || 'Consider adding more clarity to your prompt.',
+                    detailFeedback: data.qualityAnalysis?.detail?.feedback || 'Add more specific details to your prompt.',
+                    relevanceFeedback: data.qualityAnalysis?.relevance?.feedback || 'Make sure your prompt aligns with your goal.',
+                    improvedPrompt: data.improvedPrompt || 'Please provide a more specific prompt with clear instructions and details.'
                 };
+                
+                // Log the analysis data for debugging
+                console.log('Analysis data:', window.currentAnalysisData);
                 
                 // Move to step 3 (Result)
                 updateProgress(3);
                 
-                // Add analyze button to the try-again-area
+                // Clear the try-again-area and add the analyze button
+                const tryAgainArea = document.getElementById('try-again-area');
+                tryAgainArea.innerHTML = '';
+                
+                const buttonRow = document.createElement('div');
+                buttonRow.className = 'button-row';
+                
+                // Create analyze button
                 const analyzeBtn = document.createElement('button');
                 analyzeBtn.className = 'analyze-button';
                 analyzeBtn.innerHTML = '<i class="fas fa-chart-line"></i>';
@@ -272,13 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Move to step 4 (Analyze)
                     updateProgress(4);
                 });
-                
-                // Clear the try-again-area and add the analyze button
-                const tryAgainArea = document.getElementById('try-again-area');
-                tryAgainArea.innerHTML = '';
-                
-                const buttonRow = document.createElement('div');
-                buttonRow.className = 'button-row';
                 
                 // Create Try Again button
                 const tryAgainBtn = document.createElement('button');
@@ -547,8 +550,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Set up improved prompt
         const improvedPromptText = document.getElementById('improved-prompt-text');
-        if (improvedPromptText && data.improvedPrompt) {
-            improvedPromptText.textContent = data.improvedPrompt;
+        if (improvedPromptText) {
+            if (data.improvedPrompt && data.improvedPrompt.trim() !== '-' && data.improvedPrompt.trim() !== '') {
+                console.log('Setting improved prompt text to:', data.improvedPrompt);
+                improvedPromptText.textContent = data.improvedPrompt;
+            } else {
+                console.log('No valid improved prompt found, using default');
+                improvedPromptText.textContent = 'Please provide a more specific prompt with clear instructions and details.';
+            }
+        } else {
+            console.log('Could not find improved-prompt-text element');
         }
         
         // Initialize tabs

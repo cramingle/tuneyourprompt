@@ -272,9 +272,17 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis) {
         improvedText = data.content.message;
       }
       
+      // Clean up the improved text - remove quotes if present
       if (improvedText && improvedText.trim()) {
+        improvedText = improvedText.trim();
+        // Remove surrounding quotes if present
+        if ((improvedText.startsWith('"') && improvedText.endsWith('"')) || 
+            (improvedText.startsWith("'") && improvedText.endsWith("'"))) {
+          improvedText = improvedText.substring(1, improvedText.length - 1);
+        }
+        
         console.log('Successfully generated AI improved prompt');
-        return improvedText.trim();
+        return improvedText;
       } else {
         console.log('AI returned empty improved prompt, falling back to rule-based improvement');
       }
@@ -294,6 +302,12 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis) {
   
   // Add clarity improvements if needed
   if (analysis.clarity.score < 70) {
+    if (!suggestion.toLowerCase().includes('please') && !suggestion.toLowerCase().includes('create') && 
+        !suggestion.toLowerCase().includes('write') && !suggestion.toLowerCase().includes('generate')) {
+      improvements.push('add instruction words');
+      suggestion = `Please create ${suggestion}`;
+    }
+    
     if (goal.toLowerCase().includes('funny') && !suggestion.toLowerCase().includes('humor') && !suggestion.toLowerCase().includes('funny')) {
       improvements.push('add humor');
       suggestion = suggestion.replace(/\.$/, '') + ' Make it humorous and entertaining.';
@@ -331,6 +345,16 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis) {
       improvements.push('add more detail');
       suggestion = suggestion.replace(/\.$/, '') + ' Provide more specific instructions and context.';
     }
+    
+    if (!suggestion.toLowerCase().includes('example') && !suggestion.toLowerCase().includes('such as')) {
+      improvements.push('add examples');
+      suggestion = suggestion.replace(/\.$/, '') + ' Include examples to illustrate what you want.';
+    }
+  }
+  
+  // Ensure the suggestion ends with a period
+  if (!suggestion.endsWith('.') && !suggestion.endsWith('?') && !suggestion.endsWith('!')) {
+    suggestion += '.';
   }
   
   // Log the improvements made
@@ -338,6 +362,9 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis) {
     console.log('Rule-based improvements made:', improvements.join(', '));
   } else {
     console.log('No rule-based improvements needed, original prompt was good');
+    // If no improvements were made but the original prompt was good,
+    // still add a small enhancement to make it clear we improved something
+    suggestion = suggestion.replace(/\.$/, '') + ' Please be thorough and creative in your response.';
   }
   
   return suggestion;
