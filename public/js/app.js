@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Helper function to create Feather icon HTML
     function createFeatherIcon(name, size = 'sm') {
-        return `<i data-feather="${name}" class="feather-${size}"></i>`;
+        return `<i data-feather="${name}" class="feather-${size}" stroke="currentColor" fill="none"></i>`;
     }
     
     // Add typing animation effect
@@ -565,6 +565,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     tryAgainArea.innerHTML = '';
                     tryAgainArea.appendChild(chatInputArea);
                     
+                    // Initialize Feather icons in the newly added elements
+                    feather.replace();
+                    
                     // Focus on the chat input
                     document.getElementById('continue-chat-input').focus();
                     
@@ -603,6 +606,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Add the button row to the try-again-area
                 tryAgainArea.appendChild(buttonRow);
+
+                // Initialize Feather icons in the newly added buttons
+                feather.replace();
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -978,6 +984,9 @@ document.addEventListener('DOMContentLoaded', () => {
             tryAgainArea.innerHTML = '';
             tryAgainArea.appendChild(chatInputArea);
             
+            // Initialize Feather icons in the newly added elements
+            feather.replace();
+            
             // Focus on the chat input
             document.getElementById('continue-chat-input').focus();
             
@@ -1015,6 +1024,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add the button row to the try-again-area
         tryAgainArea.appendChild(buttonRow);
+
+        // Initialize Feather icons in the newly added buttons
+        feather.replace();
     }
     
     // Function to send a continue chat message
@@ -1122,6 +1134,9 @@ Please respond to the user's new message, taking into account the context of the
                 
                 tryAgainArea.innerHTML = '';
                 tryAgainArea.appendChild(chatInputArea);
+                
+                // Initialize Feather icons in the newly added elements
+                feather.replace();
                 
                 // Focus on the chat input
                 document.getElementById('continue-chat-input').focus();

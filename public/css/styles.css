@@ -1391,7 +1391,7 @@ footer a:hover {
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  fill: none;
+  fill: none !important;
   width: 16px;
   height: 16px;
   vertical-align: -0.125em;
@@ -1431,8 +1431,34 @@ footer a:hover {
 /* Button with Feather icon */
 button .feather {
   margin-right: 4px;
+  stroke: currentColor;
 }
 
 button.icon-only .feather {
   margin-right: 0;
+}
+
+/* Ensure all SVG icons have the correct styling */
+svg[data-feather] {
+  stroke: currentColor;
+  fill: none !important;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.continue-chat-button {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    box-shadow: var(--glow);
+}
+
+.continue-chat-button:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(124, 77, 255, 0.5);
+}
+
+.continue-chat-button .feather {
+    stroke: white;
 } 
