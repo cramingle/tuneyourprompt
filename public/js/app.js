@@ -790,44 +790,49 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     document.head.appendChild(style);
 
-    // Update the analyzeBtn event listener
-    document.getElementById('analyze-btn').addEventListener('click', async () => {
-        const promptText = promptInput.value.trim();
-        if (!promptText) return;
-        
-        // Show loading state
-        const analyzeBtn = document.getElementById('analyze-btn');
-        analyzeBtn.disabled = true;
-        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        
-        try {
-            const response = await fetch('/api/analyze-prompt', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ prompt: promptText })
+    // Update the analyzeBtn event listener - using the correct ID
+    document.addEventListener('DOMContentLoaded', () => {
+        // We'll check if the button exists before adding the event listener
+        const analyzeBtn = document.getElementById('analyze-prompt-btn');
+        if (analyzeBtn) {
+            analyzeBtn.addEventListener('click', async () => {
+                const promptText = promptInput.value.trim();
+                if (!promptText) return;
+                
+                // Show loading state
+                analyzeBtn.disabled = true;
+                analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                try {
+                    const response = await fetch('/api/analyze-prompt', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ prompt: promptText })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to analyze prompt');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Update the analysis panel with the results
+                    updateAnalysisPanel(data);
+                    
+                    // Show the analysis panel and update progress
+                    analysisPanel.classList.remove('hidden');
+                    updateProgress(4);
+                } catch (error) {
+                    console.error('Error analyzing prompt:', error);
+                    addSystemMessage('Failed to analyze prompt. Please try again.');
+                } finally {
+                    // Reset button state
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.innerHTML = '<i class="fas fa-chart-bar"></i>';
+                }
             });
-            
-            if (!response.ok) {
-                throw new Error('Failed to analyze prompt');
-            }
-            
-            const data = await response.json();
-            
-            // Update the analysis panel with the results
-            updateAnalysisPanel(data);
-            
-            // Show the analysis panel and update progress
-            analysisPanel.classList.remove('hidden');
-            updateProgress(4);
-        } catch (error) {
-            console.error('Error analyzing prompt:', error);
-            addSystemMessage('Failed to analyze prompt. Please try again.');
-        } finally {
-            // Reset button state
-            analyzeBtn.disabled = false;
-            analyzeBtn.innerHTML = '<i class="fas fa-chart-bar"></i>';
         }
     });
 
