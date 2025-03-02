@@ -264,7 +264,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const buttonRow = document.createElement('div');
                 buttonRow.className = 'button-row';
-                buttonRow.appendChild(analyzeBtn);
                 
                 // Create Try Again button
                 const tryAgainBtn = document.createElement('button');
@@ -321,9 +320,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
-                // Add buttons to the row
-                buttonRow.appendChild(tryAgainBtn);
-                buttonRow.appendChild(startOverBtn);
+                // Create a left side container for try again and start over buttons
+                const leftButtonsContainer = document.createElement('div');
+                leftButtonsContainer.className = 'left-buttons';
+                leftButtonsContainer.appendChild(tryAgainBtn);
+                leftButtonsContainer.appendChild(startOverBtn);
+                
+                // Create a right side container for the analyze button
+                const rightButtonsContainer = document.createElement('div');
+                rightButtonsContainer.className = 'right-buttons';
+                rightButtonsContainer.appendChild(analyzeBtn);
+                
+                // Add both containers to the button row
+                buttonRow.appendChild(leftButtonsContainer);
+                buttonRow.appendChild(rightButtonsContainer);
                 
                 tryAgainArea.appendChild(buttonRow);
                 
@@ -453,123 +463,73 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Add these new functions before the existing evaluatePrompt function
-    function updateAnalysisPanel(analysis) {
-        const analysisPanel = document.getElementById('analysis-panel');
-        const matchValue = document.getElementById('match-value');
-        const matchBarFill = document.getElementById('match-bar-fill');
+    // Function to handle tab switching in analysis panel
+    function setupAnalysisTabs() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanes = document.querySelectorAll('.tab-pane');
         
-        // Update match score
-        const overallScore = Math.round((analysis.clarity.score + analysis.detail.score + analysis.relevance.score) / 3);
-        matchValue.textContent = `${overallScore}%`;
-        matchBarFill.style.width = `${overallScore}%`;
-        
-        // Update color based on score
-        if (overallScore >= 75) {
-            matchBarFill.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
-        } else if (overallScore >= 50) {
-            matchBarFill.style.background = 'linear-gradient(90deg, #FFC107, #FFEB3B)';
-        } else {
-            matchBarFill.style.background = 'linear-gradient(90deg, #F44336, #FF9800)';
+        // Set the first tab as active by default
+        if (tabButtons.length > 0 && tabPanes.length > 0) {
+            tabButtons[0].classList.add('active');
+            tabPanes[0].classList.add('active');
         }
         
-        // Update clarity
-        document.getElementById('clarity-score').textContent = analysis.clarity.score;
-        document.getElementById('clarity-bar').style.width = `${analysis.clarity.score}%`;
-        document.getElementById('clarity-feedback').textContent = analysis.clarity.feedback;
-        
-        // Update detail
-        document.getElementById('detail-score').textContent = analysis.detail.score;
-        document.getElementById('detail-bar').style.width = `${analysis.detail.score}%`;
-        document.getElementById('detail-feedback').textContent = analysis.detail.feedback;
-        
-        // Update relevance
-        document.getElementById('relevance-score').textContent = analysis.relevance.score;
-        document.getElementById('relevance-bar').style.width = `${analysis.relevance.score}%`;
-        document.getElementById('relevance-feedback').textContent = analysis.relevance.feedback;
-        
-        // Update improved prompt
-        document.getElementById('improved-prompt-text').textContent = analysis.improvedPrompt;
-        
-        // Show the panel
-        analysisPanel.classList.remove('hidden');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons and panes
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabPanes.forEach(pane => pane.classList.remove('active'));
+                
+                // Add active class to clicked button
+                button.classList.add('active');
+                
+                // Find and show the corresponding tab pane
+                const targetId = button.getAttribute('data-tab');
+                const targetPane = document.getElementById(targetId);
+                if (targetPane) {
+                    targetPane.classList.add('active');
+                }
+            });
+        });
     }
 
-    // Replace the existing evaluatePrompt function with this updated version
-    async function evaluatePrompt(prompt, goal) {
-        let retryCount = 0;
-        const maxRetries = 2;
-        const retryDelay = 2000;
+    // Function to update the analysis panel with the analysis results
+    function updateAnalysisPanel(data) {
+        // Set up match score
+        const matchValue = document.querySelector('.match-value');
+        const matchBarFill = document.querySelector('.match-bar-fill');
         
-        function setLoadingMessage() {
-            loadingOverlay.classList.add('active');
-            loadingMessage.textContent = 'Analyzing your prompt...';
+        if (matchValue && matchBarFill) {
+            const matchScore = data.matchScore || 75; // Default to 75% if not provided
+            matchValue.textContent = `${matchScore}%`;
+            matchBarFill.style.width = `${matchScore}%`;
         }
         
-        setLoadingMessage();
+        // Set up metrics (clarity, detail, relevance)
+        const metrics = [
+            { name: 'clarity', score: data.clarityScore || 80 },
+            { name: 'detail', score: data.detailScore || 70 },
+            { name: 'relevance', score: data.relevanceScore || 85 }
+        ];
         
-        async function attemptEvaluation() {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Request timed out')), 30000);
-            });
+        metrics.forEach(metric => {
+            const barFill = document.querySelector(`.${metric.name}-bar-fill`);
+            const score = document.querySelector(`.${metric.name}-score`);
             
-            try {
-                const response = await Promise.race([
-                    fetch('/api/evaluate', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ prompt, goal }),
-                        signal: controller.signal
-                    }),
-                    timeoutPromise
-                ]);
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    // Add AI response to chat
-                    addMessage('ai', data.aiResponse);
-                    
-                    // Update analysis panel instead of adding feedback to chat
-                    updateAnalysisPanel(data.analysis);
-                    
-                    // Update progress after a delay
-                    setTimeout(() => {
-                        updateProgress(3);
-                    }, 500);
-                } else {
-                    throw new Error(`Server responded with ${response.status}`);
-                }
-            } catch (error) {
-                console.error('Evaluation error:', error);
-                
-                if (error.name === 'AbortError' || error.message === 'Request timed out') {
-                    if (retryCount < maxRetries) {
-                        retryCount++;
-                        console.log(`Retry attempt ${retryCount}...`);
-                        loadingMessage.textContent = `Request timed out. Retrying (${retryCount}/${maxRetries})...`;
-                        await new Promise(resolve => setTimeout(resolve, retryDelay));
-                        return attemptEvaluation();
-                    } else {
-                        addMessage('system', 'The request timed out. Please try again later.');
-                    }
-                } else {
-                    addMessage('system', 'There was an error evaluating your prompt. Please try again.');
-                }
-                
-                updateProgress(3);
-            } finally {
-                loadingOverlay.classList.remove('active');
+            if (barFill && score) {
+                barFill.style.width = `${metric.score}%`;
+                score.textContent = `${metric.score}%`;
             }
+        });
+        
+        // Set up improved prompt
+        const improvedPromptText = document.querySelector('.improved-prompt-text');
+        if (improvedPromptText && data.improvedPrompt) {
+            improvedPromptText.textContent = data.improvedPrompt;
         }
         
-        await attemptEvaluation();
+        // Initialize tabs
+        setupAnalysisTabs();
     }
 
     // Add event listeners for the analysis panel
@@ -719,11 +679,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
-                // Add buttons to the row
-                buttonRow.appendChild(tryAgainBtn);
-                buttonRow.appendChild(startOverBtn);
+                // Create a left side container for try again and start over buttons
+                const leftButtonsContainer = document.createElement('div');
+                leftButtonsContainer.className = 'left-buttons';
+                leftButtonsContainer.appendChild(tryAgainBtn);
+                leftButtonsContainer.appendChild(startOverBtn);
                 
-                // Add the row to the try-again-area
+                // Create a right side container for the analyze button
+                const rightButtonsContainer = document.createElement('div');
+                rightButtonsContainer.className = 'right-buttons';
+                rightButtonsContainer.appendChild(analyzeBtn);
+                
+                // Add both containers to the button row
+                buttonRow.appendChild(leftButtonsContainer);
+                buttonRow.appendChild(rightButtonsContainer);
+                
                 tryAgainArea.appendChild(buttonRow);
                 
             } catch (error) {
@@ -736,5 +706,137 @@ document.addEventListener('DOMContentLoaded', () => {
                 addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> Error getting final result: ${error.message}. Please try again.`);
             }
         });
+    }
+
+    // Add event listener for the "Use Improved Prompt" button
+    document.querySelector('.use-improved-prompt').addEventListener('click', async () => {
+        const improvedPromptText = document.querySelector('.improved-prompt-text').textContent;
+        if (!improvedPromptText) return;
+        
+        // Hide the analysis panel
+        analysisPanel.classList.add('hidden');
+        
+        // Add a message indicating we're using the improved prompt
+        addMessage('system', 'Using the improved prompt to generate a better response...');
+        
+        // Show loading state
+        loadingOverlay.classList.add('active');
+        loadingMessage.textContent = 'Generating response with improved prompt...';
+        
+        try {
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ prompt: improvedPromptText })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to generate response');
+            }
+            
+            const data = await response.json();
+            
+            // Add a separator line in the chat
+            const separator = document.createElement('div');
+            separator.className = 'chat-separator';
+            separator.innerHTML = '<span>Final Result</span>';
+            chatMessages.appendChild(separator);
+            
+            // Add the final AI response to chat
+            addMessage('ai', data.response);
+            
+            // Update progress
+            updateProgress(5);
+        } catch (error) {
+            console.error('Error generating response:', error);
+            addMessage('system', 'Failed to generate response. Please try again.');
+        } finally {
+            loadingOverlay.classList.remove('active');
+        }
+    });
+
+    // Add CSS for the chat separator
+    const style = document.createElement('style');
+    style.textContent = `
+    .chat-separator {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .chat-separator::before,
+    .chat-separator::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .chat-separator span {
+        padding: 0 10px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--light-text);
+        font-weight: 600;
+        background-color: var(--background-color);
+    }
+    `;
+    document.head.appendChild(style);
+
+    // Update the analyzeBtn event listener
+    document.getElementById('analyze-btn').addEventListener('click', async () => {
+        const promptText = promptInput.value.trim();
+        if (!promptText) return;
+        
+        // Show loading state
+        const analyzeBtn = document.getElementById('analyze-btn');
+        analyzeBtn.disabled = true;
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        try {
+            const response = await fetch('/api/analyze-prompt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ prompt: promptText })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to analyze prompt');
+            }
+            
+            const data = await response.json();
+            
+            // Update the analysis panel with the results
+            updateAnalysisPanel(data);
+            
+            // Show the analysis panel and update progress
+            analysisPanel.classList.remove('hidden');
+            updateProgress(4);
+        } catch (error) {
+            console.error('Error analyzing prompt:', error);
+            addSystemMessage('Failed to analyze prompt. Please try again.');
+        } finally {
+            // Reset button state
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerHTML = '<i class="fas fa-chart-bar"></i>';
+        }
+    });
+
+    // Function to add system messages to the chat
+    function addSystemMessage(text) {
+        const systemMessage = document.createElement('div');
+        systemMessage.className = 'chat-message system-message';
+        systemMessage.innerHTML = `
+            <div class="message-content">
+                <p>${text}</p>
+            </div>
+        `;
+        chatMessages.appendChild(systemMessage);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 }); 

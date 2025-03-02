@@ -116,51 +116,79 @@
                 <div class="analysis-title">PROMPT ANALYSIS</div>
                 <button class="close-analysis" id="close-analysis" title="Close Analysis"><i class="fas fa-times"></i></button>
             </div>
-            <div class="match-indicator">
-                <div class="match-label">MATCH</div>
-                <div class="match-value" id="match-value">0%</div>
-                <div class="match-bar">
-                    <div class="match-bar-fill" id="match-bar-fill"></div>
-                </div>
+            <div class="analysis-tabs">
+                <button class="tab-button active" data-tab="match-tab">MATCH</button>
+                <button class="tab-button" data-tab="clarity-tab">CLARITY</button>
+                <button class="tab-button" data-tab="detail-tab">DETAIL</button>
+                <button class="tab-button" data-tab="relevance-tab">RELEVANCE</button>
+                <button class="tab-button" data-tab="improved-tab">IMPROVED</button>
             </div>
-            <div class="analysis-metrics">
-                <div class="metric">
-                    <div class="metric-header">
-                        <div class="metric-name">CLARITY</div>
-                        <div class="metric-score" id="clarity-score">0</div>
+            <div class="tab-content">
+                <div class="tab-pane active" id="match-tab">
+                    <div class="match-indicator">
+                        <div class="match-value" id="match-value">0%</div>
+                        <div class="match-bar">
+                            <div class="match-bar-fill" id="match-bar-fill"></div>
+                        </div>
+                        <div class="match-description">
+                            <p>This score represents how well your prompt is likely to achieve your goal.</p>
+                        </div>
                     </div>
-                    <div class="metric-bar">
-                        <div class="metric-bar-fill" id="clarity-bar"></div>
-                    </div>
-                    <div class="metric-feedback" id="clarity-feedback">-</div>
                 </div>
-                <div class="metric">
-                    <div class="metric-header">
-                        <div class="metric-name">DETAIL</div>
-                        <div class="metric-score" id="detail-score">0</div>
+                <div class="tab-pane" id="clarity-tab">
+                    <div class="metric">
+                        <div class="metric-header">
+                            <div class="metric-name">CLARITY</div>
+                            <div class="metric-score" id="clarity-score">0</div>
+                        </div>
+                        <div class="metric-bar">
+                            <div class="metric-bar-fill" id="clarity-bar"></div>
+                        </div>
+                        <div class="metric-feedback" id="clarity-feedback">-</div>
+                        <div class="metric-description">
+                            <p>Clarity measures how well your prompt communicates your intentions to the AI.</p>
+                        </div>
                     </div>
-                    <div class="metric-bar">
-                        <div class="metric-bar-fill" id="detail-bar"></div>
-                    </div>
-                    <div class="metric-feedback" id="detail-feedback">-</div>
                 </div>
-                <div class="metric">
-                    <div class="metric-header">
-                        <div class="metric-name">RELEVANCE</div>
-                        <div class="metric-score" id="relevance-score">0</div>
+                <div class="tab-pane" id="detail-tab">
+                    <div class="metric">
+                        <div class="metric-header">
+                            <div class="metric-name">DETAIL</div>
+                            <div class="metric-score" id="detail-score">0</div>
+                        </div>
+                        <div class="metric-bar">
+                            <div class="metric-bar-fill" id="detail-bar"></div>
+                        </div>
+                        <div class="metric-feedback" id="detail-feedback">-</div>
+                        <div class="metric-description">
+                            <p>Detail measures the specificity and richness of your prompt.</p>
+                        </div>
                     </div>
-                    <div class="metric-bar">
-                        <div class="metric-bar-fill" id="relevance-bar"></div>
+                </div>
+                <div class="tab-pane" id="relevance-tab">
+                    <div class="metric">
+                        <div class="metric-header">
+                            <div class="metric-name">RELEVANCE</div>
+                            <div class="metric-score" id="relevance-score">0</div>
+                        </div>
+                        <div class="metric-bar">
+                            <div class="metric-bar-fill" id="relevance-bar"></div>
+                        </div>
+                        <div class="metric-feedback" id="relevance-feedback">-</div>
+                        <div class="metric-description">
+                            <p>Relevance measures how well your prompt aligns with your stated goal.</p>
+                        </div>
                     </div>
-                    <div class="metric-feedback" id="relevance-feedback">-</div>
                 </div>
-            </div>
-            <div class="improved-prompt">
-                <div class="improved-prompt-header">
-                    <i class="fas fa-magic"></i> IMPROVED PROMPT
+                <div class="tab-pane" id="improved-tab">
+                    <div class="improved-prompt">
+                        <div class="improved-prompt-header">
+                            <i class="fas fa-magic"></i> IMPROVED PROMPT
+                        </div>
+                        <div class="improved-prompt-text" id="improved-prompt-text">-</div>
+                        <button class="use-improved-prompt" id="use-improved-prompt" title="Use This Prompt"><i class="fas fa-check"></i></button>
+                    </div>
                 </div>
-                <div class="improved-prompt-text" id="improved-prompt-text">-</div>
-                <button class="use-improved-prompt" id="use-improved-prompt" title="Use This Prompt"><i class="fas fa-check"></i></button>
             </div>
         </div>
 
