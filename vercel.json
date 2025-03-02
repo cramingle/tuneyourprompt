@@ -12,6 +12,14 @@
       "dest": "/server.js"
     }
   ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 60
+    },
+    "server.js": {
+      "maxDuration": 60
+    }
+  },
   "env": {
     "OLLAMA_API_URL": "https://ai.mailbyai.site",
     "USE_MOCK_DATA": "false"

@@ -283,6 +283,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         async function attemptEvaluation() {
             try {
+                // Update loading message
+                const loadingText = document.querySelector('.loading-overlay p');
+                if (retries > 0) {
+                    loadingText.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
+                }
+                
+                // Create an AbortController for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                
                 // Call the API to evaluate the prompt
                 const response = await fetch('/api/evaluate', {
                     method: 'POST',
@@ -293,9 +303,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         prompt: promptText,
                         goal: goalText
                     }),
-                    // Set a longer timeout
-                    timeout: 30000
+                    signal: controller.signal
                 });
+                
+                // Clear the timeout
+                clearTimeout(timeoutId);
                 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
@@ -322,7 +334,33 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Error:', error);
                 
-                if (retries < maxRetries) {
+                // Check if it's a timeout error
+                if (error.name === 'AbortError') {
+                    console.log('Request timed out');
+                    
+                    if (retries < maxRetries) {
+                        retries++;
+                        console.log(`Retry attempt ${retries}/${maxRetries} after timeout`);
+                        
+                        // Update loading message
+                        const loadingText = document.querySelector('.loading-overlay p');
+                        loadingText.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
+                        
+                        // Wait a moment before retrying
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        
+                        // Try again
+                        return attemptEvaluation();
+                    } else {
+                        // Hide loading overlay
+                        loadingOverlay.style.display = 'none';
+                        
+                        addMessage('system', `<i class="fas fa-clock fa-xs"></i> The request timed out. The server might be busy. Please try again later.`);
+                        
+                        // Move to step 3 anyway so user can try again
+                        updateProgress(3);
+                    }
+                } else if (retries < maxRetries) {
                     retries++;
                     console.log(`Retry attempt ${retries}/${maxRetries}`);
                     
@@ -335,15 +373,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Try again
                     return attemptEvaluation();
+                } else {
+                    // Hide loading overlay
+                    loadingOverlay.style.display = 'none';
+                    
+                    addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> An error occurred while evaluating your prompt: ${error.message}. Please try again later.`);
+                    
+                    // Move to step 3 anyway so user can try again
+                    updateProgress(3);
                 }
-                
-                // Hide loading overlay
-                loadingOverlay.style.display = 'none';
-                
-                addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> An error occurred while evaluating your prompt: ${error.message}. Please try again later.`);
-                
-                // Move to step 3 anyway so user can try again
-                updateProgress(3);
             }
         }
         
@@ -400,7 +438,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Helper function to check server health
     async function checkServerHealth() {
         try {
-            const response = await fetch('/api/health');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+            
+            const response = await fetch('/api/health', {
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
             if (response.ok) {
                 const data = await response.json();
                 console.log('Server health:', data);
@@ -415,11 +461,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 console.warn('Server health check failed');
-                addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> Warning: Server health check failed. Some features may not work properly.');
+                ollamaAvailable = false;
+                addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> Warning: Server health check failed. The app will use simulated AI responses.');
             }
         } catch (error) {
             console.error('Server connection error:', error);
-            addMessage('system', '<i class="fas fa-times-circle fa-xs"></i> Error: Cannot connect to the server. Please check your connection and reload the page.');
+            ollamaAvailable = false;
+            if (error.name === 'AbortError') {
+                addMessage('system', '<i class="fas fa-clock fa-xs"></i> Warning: Server health check timed out. The app will use simulated AI responses.');
+            } else {
+                addMessage('system', '<i class="fas fa-times-circle fa-xs"></i> Error: Cannot connect to the server. Please check your connection and reload the page.');
+            }
         }
     }
     
