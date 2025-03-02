@@ -1,7 +1,7 @@
 // utils.js - Utility functions for the application
 
 // Loading tips to display during API calls
-const LOADING_TIPS = [
+export const LOADING_TIPS = [
     "Great prompts are specific, clear, and provide context.",
     "Try including examples in your prompts for better results.",
     "Consider the tone and style you want in the AI's response.",
@@ -13,7 +13,7 @@ const LOADING_TIPS = [
 ];
 
 // Loading messages for different operations
-const LOADING_MESSAGES = {
+export const LOADING_MESSAGES = {
     default: "Processing Request",
     health: "Connecting to AI",
     generate: "Crafting Response",
