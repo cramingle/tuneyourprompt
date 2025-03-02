@@ -12,6 +12,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'https://ai.mailbyai.site';
 const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true' || false;
+const IS_VERCEL = process.env.VERCEL === '1';
+
+// Log environment on startup
+console.log('Environment:', {
+  PORT,
+  OLLAMA_API_URL,
+  USE_MOCK_DATA,
+  IS_VERCEL
+});
 
 // Middleware
 app.use(cors());
@@ -151,9 +160,6 @@ app.post('/api/evaluate', async (req, res) => {
     
     let aiResponse;
     
-    // Check if we're on Vercel
-    const isVercel = process.env.VERCEL === '1';
-    
     // Try to call external API or use mock data if specified/needed
     try {
       if (USE_MOCK_DATA) {
@@ -167,7 +173,7 @@ app.post('/api/evaluate', async (req, res) => {
       
       // Set a timeout based on environment - shorter for Vercel
       const controller = new AbortController();
-      const timeoutDuration = isVercel ? 10000 : 30000; // 10 seconds for Vercel, 30 seconds for local
+      const timeoutDuration = IS_VERCEL ? 10000 : 30000; // 10 seconds for Vercel, 30 seconds for local
       const timeoutId = setTimeout(() => {
         console.log(`API request timed out after ${timeoutDuration/1000} seconds`);
         controller.abort();
@@ -288,11 +294,8 @@ app.get('/api/health', (req, res) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for health checks
   
-  // First check if we're on Vercel
-  const isVercel = process.env.VERCEL === '1';
-  
-  // If we're on Vercel and USE_MOCK_DATA is false, try a quick check
-  if (isVercel) {
+  // If we're on Vercel, use a faster approach
+  if (IS_VERCEL) {
     console.log('Running on Vercel, performing quick health check');
     
     // For Vercel deployments, we'll use a faster health check approach
