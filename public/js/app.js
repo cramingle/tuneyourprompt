@@ -125,7 +125,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 
                 // Start typing animation with formatting
-                typeTextFormatted(contentDiv, content, 15);
+                return typeTextFormatted(contentDiv, content, 15).then(() => {
+                    // Scroll to bottom again after animation completes
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    return messageDiv;
+                });
             } else if (type === 'ai') {
                 // Format AI responses with proper paragraphs
                 const formattedContent = formatAIResponse(content);
@@ -1121,8 +1125,8 @@ Please respond to the user's new message, taking into account the context of the
     const style = document.createElement('style');
     style.textContent = `
     :root {
-        --purple-accent: #8a2be2;
-        --purple-hover: #7722c9;
+        --button-bg: rgba(255, 255, 255, 0.15);
+        --button-hover: rgba(255, 255, 255, 0.25);
     }
     
     .chat-separator {
@@ -1149,27 +1153,33 @@ Please respond to the user's new message, taking into account the context of the
         background-color: var(--background-color);
     }
     
-    /* Continue Chat Button Styles */
-    .continue-chat-button {
-        background-color: var(--purple-accent);
+    /* Button Styles - Unified for all action buttons */
+    .try-again-button, .start-over-button, .analyze-button, .continue-chat-button, #send-chat-btn {
+        width: 16px;
+        height: 16px;
+        font-size: 0.5rem;
+        box-shadow: none;
+        background-color: var(--button-bg);
         color: white;
         border: none;
         border-radius: 50%;
-        width: 18px;
-        height: 18px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        font-size: 0.6rem;
+        transition: background-color 0.2s ease;
+        padding: 0;
+        margin: 0;
     }
     
-    .continue-chat-button:hover {
-        background-color: var(--purple-hover);
-        transform: translateY(-1px);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    .try-again-button:hover, .start-over-button:hover, .analyze-button:hover, .continue-chat-button:hover, #send-chat-btn:hover {
+        background-color: var(--button-hover);
+    }
+    
+    /* Special positioning for send button */
+    #send-chat-btn {
+        margin-left: 3px;
+        align-self: flex-end;
     }
     
     /* Chat Input Area Styles */
@@ -1195,45 +1205,15 @@ Please respond to the user's new message, taking into account the context of the
         outline: none;
     }
     
-    #send-chat-btn {
-        background-color: var(--purple-accent);
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 18px;
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        margin-left: 3px;
-        align-self: flex-end;
-        font-size: 0.6rem;
-    }
-    
-    #send-chat-btn:hover {
-        background-color: var(--purple-hover);
-    }
-    
-    /* Make all buttons in input area smaller */
-    .try-again-button, .start-over-button, .analyze-button {
-        width: 18px;
-        height: 18px;
-        font-size: 0.6rem;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        background-color: var(--purple-accent);
-    }
-    
-    .try-again-button:hover, .start-over-button:hover, .analyze-button:hover {
-        background-color: var(--purple-hover);
-    }
-    
     /* Adjust button spacing */
     .button-row {
         gap: 3px;
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        width: 100%;
+        padding-left: 5px;
     }
     
     .left-buttons, .right-buttons {
@@ -1241,74 +1221,91 @@ Please respond to the user's new message, taking into account the context of the
         display: flex;
     }
     
-    /* Make analysis panel much smaller */
+    /* Make analysis panel much smaller but maintain 100% width */
     #analysis-panel {
-        max-width: 70%;
+        width: 100%;
+        max-width: 100%;
         max-height: 60vh;
-        width: auto;
         padding: 6px;
         font-size: 0.7rem;
         border-radius: 4px;
-        border: 1px solid var(--purple-accent);
+        border: 1px solid var(--border-color);
+        box-sizing: border-box;
+        margin-top: 5px;
     }
     
     #analysis-panel h2 {
         font-size: 0.8rem;
         margin-bottom: 5px;
-        color: var(--purple-accent);
+        color: var(--text-color);
     }
     
     #analysis-panel .tab-buttons {
         margin-bottom: 5px;
+        display: flex;
+        width: 100%;
     }
     
     #analysis-panel .tab-button {
         padding: 2px 4px;
         font-size: 0.6rem;
         border-radius: 2px;
+        flex: 1;
+        text-align: center;
     }
     
     #analysis-panel .tab-button.active {
-        background-color: var(--purple-accent);
+        background-color: var(--button-bg);
     }
     
     #analysis-panel .metric-bar {
         height: 3px;
         margin: 2px 0;
         border-radius: 1px;
+        background-color: var(--border-color);
     }
     
     #analysis-panel .metric-bar-fill {
-        background-color: var(--purple-accent);
+        background-color: var(--accent-color);
     }
     
     #analysis-panel .metric-info {
         margin-bottom: 4px;
+        width: 100%;
     }
     
     #analysis-panel .metric-label {
         font-size: 0.65rem;
+        display: inline-block;
+        width: 70%;
     }
     
     #analysis-panel .metric-score {
         font-size: 0.65rem;
-        color: var(--purple-accent);
+        color: var(--accent-color);
+        display: inline-block;
+        width: 30%;
+        text-align: right;
     }
     
     #analysis-panel .metric-feedback {
         font-size: 0.65rem;
         margin-top: 2px;
+        width: 100%;
     }
     
     #analysis-panel .improved-prompt-section {
         margin-top: 5px;
+        width: 100%;
     }
     
     #analysis-panel #improved-prompt-text {
         font-size: 0.7rem;
         padding: 3px;
         border-radius: 2px;
-        border: 1px solid var(--purple-accent);
+        border: 1px solid var(--border-color);
+        width: 100%;
+        box-sizing: border-box;
     }
     
     #analysis-panel #use-improved-prompt {
@@ -1316,11 +1313,13 @@ Please respond to the user's new message, taking into account the context of the
         font-size: 0.6rem;
         margin-top: 3px;
         border-radius: 2px;
-        background-color: var(--purple-accent);
+        background-color: var(--button-bg);
+        width: 100%;
+        text-align: center;
     }
     
     #analysis-panel #use-improved-prompt:hover {
-        background-color: var(--purple-hover);
+        background-color: var(--button-hover);
     }
     
     #analysis-panel .close-button {
@@ -1330,11 +1329,11 @@ Please respond to the user's new message, taking into account the context of the
         height: 14px;
         font-size: 0.6rem;
         border-radius: 50%;
-        background-color: var(--purple-accent);
+        background-color: var(--button-bg);
     }
     
     #analysis-panel .close-button:hover {
-        background-color: var(--purple-hover);
+        background-color: var(--button-hover);
     }
     
     /* Make all input areas more compact */
@@ -1350,11 +1349,11 @@ Please respond to the user's new message, taking into account the context of the
     .input-area button {
         padding: 3px 6px;
         font-size: 0.7rem;
-        background-color: var(--purple-accent);
+        background-color: var(--button-bg);
     }
     
     .input-area button:hover {
-        background-color: var(--purple-hover);
+        background-color: var(--button-hover);
     }
     
     /* Make message bubbles smaller */
@@ -1371,7 +1370,7 @@ Please respond to the user's new message, taking into account the context of the
     }
     
     .progress-fill {
-        background-color: var(--purple-accent);
+        background-color: var(--accent-color);
     }
     
     /* Make step indicators smaller */
@@ -1391,6 +1390,22 @@ Please respond to the user's new message, taking into account the context of the
     
     .app-header p {
         font-size: 0.7rem;
+    }
+    
+    /* Original prompt comparison */
+    .original-prompt-comparison {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Tab panes */
+    .tab-pane {
+        width: 100%;
+    }
+    
+    /* Match info */
+    .match-info {
+        width: 100%;
     }
     `;
     document.head.appendChild(style);
@@ -1483,14 +1498,36 @@ Please respond to the user's new message, taking into account the context of the
                     separator.innerHTML = '<span>Final Result</span>';
                     chatMessages.appendChild(separator);
                     
-                    // Add the AI response to the chat
-                    addMessage('ai', formatAIResponse(data.response), '', true);
+                    // Ensure we scroll to the separator
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
                     
-                    // Update progress to step 5 (Final)
-                    updateProgress(5);
+                    // Add the AI response to the chat with animation
+                    const messagePromise = addMessage('ai', data.response, '', true);
                     
-                    // Add Try Again and Start Over buttons
-                    addFinalStepButtons();
+                    // After the message is added and animation completes, update progress and add buttons
+                    if (messagePromise && messagePromise.then) {
+                        messagePromise.then(() => {
+                            // Update progress to step 5 (Final)
+                            updateProgress(5);
+                            
+                            // Add Try Again and Start Over buttons
+                            addFinalStepButtons();
+                            
+                            // Final scroll to ensure everything is visible
+                            setTimeout(() => {
+                                chatMessages.scrollTop = chatMessages.scrollHeight;
+                            }, 100);
+                        });
+                    } else {
+                        // If no promise was returned (no animation), update immediately
+                        updateProgress(5);
+                        addFinalStepButtons();
+                        
+                        // Final scroll to ensure everything is visible
+                        setTimeout(() => {
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }, 100);
+                    }
                     
                 } catch (error) {
                     console.error('Error generating response:', error);
