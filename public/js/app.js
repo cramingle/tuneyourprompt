@@ -243,14 +243,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Store the analysis data for later use
                 window.currentAnalysisData = {
-                    matchScore: data.matchPercentage,
-                    clarityScore: data.qualityAnalysis.clarity.score,
-                    detailScore: data.qualityAnalysis.detail.score,
-                    relevanceScore: data.qualityAnalysis.relevance.score,
-                    improvedPrompt: data.improvedPrompt,
-                    clarityFeedback: data.qualityAnalysis.clarity.feedback,
-                    detailFeedback: data.qualityAnalysis.detail.feedback,
-                    relevanceFeedback: data.qualityAnalysis.relevance.feedback
+                    matchScore: data.matchPercentage || 0,
+                    clarityScore: data.qualityAnalysis?.clarity?.score || 0,
+                    detailScore: data.qualityAnalysis?.detail?.score || 0,
+                    relevanceScore: data.qualityAnalysis?.relevance?.score || 0,
+                    improvedPrompt: data.improvedPrompt || '',
+                    clarityFeedback: data.qualityAnalysis?.clarity?.feedback || 'No clarity feedback available.',
+                    detailFeedback: data.qualityAnalysis?.detail?.feedback || 'No detail feedback available.',
+                    relevanceFeedback: data.qualityAnalysis?.relevance?.feedback || 'No relevance feedback available.'
                 };
                 
                 // Move to step 3 (Result)
@@ -447,19 +447,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } else {
                     ollamaAvailable = false;
-                    console.warn('AI API is not available, using mock responses:', data);
-                    addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> Note: AI API is not available. The app will use simulated AI responses.');
+                    console.log('AI API is not available:', data);
+                    addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> Note: AI API is not available. Please try again later.');
                 }
             } else {
                 console.warn('Server health check failed with status:', response.status);
                 ollamaAvailable = false;
-                addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> Warning: Server health check failed. The app will use simulated AI responses.');
+                addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> Warning: Server health check failed. Please try again later.');
             }
         } catch (error) {
             console.error('Server connection error:', error);
             ollamaAvailable = false;
             if (error.name === 'AbortError') {
-                addMessage('system', '<i class="fas fa-clock fa-xs"></i> Warning: Server health check timed out. The app will use simulated AI responses.');
+                addMessage('system', '<i class="fas fa-clock fa-xs"></i> Warning: Server health check timed out. Please try again later.');
             } else {
                 addMessage('system', '<i class="fas fa-times-circle fa-xs"></i> Error: Cannot connect to the server. Please check your connection and reload the page.');
             }

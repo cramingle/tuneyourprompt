@@ -11,14 +11,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'https://ai.mailbyai.site';
-const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true' || false;
 const IS_VERCEL = process.env.VERCEL === '1';
 
 // Log environment on startup
 console.log('Environment:', {
   PORT,
   OLLAMA_API_URL,
-  USE_MOCK_DATA,
   IS_VERCEL
 });
 
@@ -116,39 +114,6 @@ function generateImprovedPrompt(originalPrompt, goal, analysis) {
   return suggestion;
 }
 
-// Generate a mock AI response based on the prompt and goal
-function generateMockResponse(prompt, goal) {
-  // Extract key terms from the goal
-  const goalWords = goal.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-  
-  // Check if the goal mentions specific content types
-  const isStory = goal.toLowerCase().includes('story');
-  const isPoem = goal.toLowerCase().includes('poem');
-  const isFunny = goal.toLowerCase().includes('funny') || goal.toLowerCase().includes('humor');
-  const isPirate = goal.toLowerCase().includes('pirate');
-  
-  let response = '';
-  
-  if (isStory && isPirate) {
-    response = "Captain Redbeard stood at the helm of his ship, the Salty Seadog, gazing out at the horizon. The sea was calm today, too calm for his liking. \"Where's the adventure in smooth sailing?\" he grumbled to his first mate, a parrot named Crackers.\n\n\"Squawk! Boring seas ahead!\" Crackers replied, flapping his colorful wings.";
-    
-    if (isFunny) {
-      response += "\n\nSuddenly, Redbeard spotted something in the distance. \"Man the cannons!\" he shouted, pulling out his spyglass. After a moment of intense squinting, he lowered it with a sigh. \"False alarm, lads. It's just a very large seagull with an attitude problem.\"";
-    }
-  } else if (isPoem) {
-    response = "Whispers of the mind,\nEchoing through endless space,\nThoughts become real things.";
-    
-    if (goalWords.some(word => ['nature', 'ocean', 'sea'].includes(word))) {
-      response = "Ocean waves rolling,\nBlue vastness touching the sky,\nEndless horizon.";
-    }
-  } else {
-    // Generic response that tries to incorporate goal keywords
-    response = `Here's a response about ${goalWords.join(', ')}. The quality of this response depends on how well your prompt was crafted. A good prompt would specify exactly what you want, including tone, style, format, and key details.`;
-  }
-  
-  return response;
-}
-
 // API endpoint to evaluate prompts
 app.post('/api/evaluate', async (req, res) => {
   try {
@@ -160,12 +125,8 @@ app.post('/api/evaluate', async (req, res) => {
     
     let aiResponse;
     
-    // Try to call external API or use mock data if specified/needed
+    // Try to call external API
     try {
-      if (USE_MOCK_DATA) {
-        throw new Error('Using mock data as specified in environment');
-      }
-      
       // Since this API seems to be designed for email templates, let's try a different approach
       const enhancedPrompt = `Create a plain text response (no HTML) for the following prompt: ${prompt}`;
       
@@ -247,13 +208,13 @@ app.post('/api/evaluate', async (req, res) => {
         console.log('Using response field');
         aiResponse = data.response;
       } else {
-        console.log('Unexpected API response format, using fallback');
+        console.log('Unexpected API response format');
         throw new Error('Unexpected API response format');
       }
       
     } catch (error) {
       console.log('API error:', error.message);
-      // Return the actual error instead of using mock data
+      // Return the actual error
       return res.status(500).json({ 
         error: 'API error', 
         details: error.message,
@@ -306,26 +267,12 @@ app.post('/api/generate', async (req, res) => {
     
     let response;
     
-    // Try to call external API or use mock data if specified/needed
+    // Try to call external API
     try {
-      if (USE_MOCK_DATA) {
-        throw new Error('Using mock data as specified in environment');
-      }
-      
-      // Create a prompt that focuses on general AI interaction
-      const enhancedPrompt = `You are a helpful AI assistant. Please respond to the following prompt: ${prompt}`;
-      
-      console.log('Sending prompt to API:', enhancedPrompt);
-      
       // Set a timeout based on environment - shorter for Vercel
       const controller = new AbortController();
       const timeoutDuration = IS_VERCEL ? 10000 : 30000; // 10 seconds for Vercel, 30 seconds for local
-      const timeoutId = setTimeout(() => {
-        console.log(`API request timed out after ${timeoutDuration/1000} seconds`);
-        controller.abort();
-      }, timeoutDuration);
-      
-      console.log(`Setting API timeout to ${timeoutDuration/1000} seconds`);
+      const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
       
       const apiResponse = await fetch(`${OLLAMA_API_URL}/ai/chat`, {
         method: 'POST',
@@ -334,7 +281,7 @@ app.post('/api/generate', async (req, res) => {
         },
         body: JSON.stringify({
           model: 'metis',
-          prompt: enhancedPrompt,
+          prompt: prompt,
           stream: false
         }),
         signal: controller.signal
@@ -344,12 +291,10 @@ app.post('/api/generate', async (req, res) => {
       clearTimeout(timeoutId);
       
       if (!apiResponse.ok) {
-        console.log(`API responded with status: ${apiResponse.status}`);
         throw new Error(`API responded with status: ${apiResponse.status}`);
       }
       
       const data = await apiResponse.json();
-      console.log('API response:', JSON.stringify(data).substring(0, 200) + '...');
       
       // Extract the content based on the response type
       if (data.type === 'text' && data.content) {
@@ -379,19 +324,15 @@ app.post('/api/generate', async (req, res) => {
           throw new Error('No content found in email template response');
         }
       } else if (data.content && data.content.message) {
-        console.log('Using message from content');
         response = data.content.message;
       } else if (data.response) {
-        console.log('Using response field');
         response = data.response;
       } else {
-        console.log('Unexpected API response format, using fallback');
         throw new Error('Unexpected API response format');
       }
       
     } catch (error) {
       console.log('API error:', error.message);
-      // Return the actual error instead of using mock data
       return res.status(500).json({ 
         error: 'API error', 
         details: error.message,
@@ -399,21 +340,8 @@ app.post('/api/generate', async (req, res) => {
       });
     }
     
-    // Ensure response is not undefined
-    if (!response) {
-      console.log('Response is undefined');
-      return res.status(500).json({ 
-        error: 'Empty response', 
-        message: 'Received empty response from AI API. Please try again later.'
-      });
-    }
-    
-    console.log('Final response:', response.substring(0, 100) + '...');
-    
     // Return the response
-    res.json({
-      response
-    });
+    res.json({ response });
     
   } catch (error) {
     console.error('Error generating response:', error);
@@ -422,88 +350,48 @@ app.post('/api/generate', async (req, res) => {
 });
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-  // Set a shorter timeout for health checks to avoid Vercel timeouts
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for health checks
-  
-  // If we're on Vercel, use a faster approach
-  if (IS_VERCEL) {
-    console.log('Running on Vercel, performing quick health check');
-    
-    // For Vercel deployments, we'll use a faster health check approach
-    fetch(`${OLLAMA_API_URL}/ai/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'metis',
-        prompt: 'Hello',
-        stream: false
-      }),
-      signal: controller.signal
-    })
-      .then(async response => {
-        clearTimeout(timeoutId);
-        if (response.ok) {
-          try {
-            // Try to parse the response to verify it's valid
-            const data = await response.json();
-            if (data && (data.type === 'text' || data.type === 'email_template' || data.content || data.response)) {
-              return res.json({ status: 'ok', ollama: 'connected' });
-            } else {
-              return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', reason: 'Invalid response format' });
-            }
-          } catch (error) {
-            return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', error: 'Failed to parse response' });
-          }
-        } else {
-          return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', statusCode: response.status });
-        }
-      })
-      .catch(error => {
-        clearTimeout(timeoutId);
-        console.log('Health check error:', error.message);
-        return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', error: error.message });
+app.get('/api/health', async (req, res) => {
+  try {
+    // Check if Ollama API is available
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(`${OLLAMA_API_URL}/ai/health`, {
+        signal: controller.signal
       });
-  } else {
-    // For local development, we can afford a slightly longer timeout
-    fetch(`${OLLAMA_API_URL}/ai/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'metis',
-        prompt: 'Hello',
-        stream: false
-      }),
-      signal: controller.signal
-    })
-      .then(async response => {
-        clearTimeout(timeoutId);
-        if (response.ok) {
-          try {
-            // Try to parse the response to verify it's valid
-            const data = await response.json();
-            if (data && (data.type === 'text' || data.type === 'email_template' || data.content || data.response)) {
-              return res.json({ status: 'ok', ollama: 'connected' });
-            } else {
-              return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', reason: 'Invalid response format' });
-            }
-          } catch (error) {
-            return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', error: 'Failed to parse response' });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        try {
+          const data = await response.json();
+          console.log('Health check response:', data);
+          
+          if (data && data.status === 'ok') {
+            return res.json({ 
+              status: 'ok', 
+              ollama: 'connected', 
+              environment: IS_VERCEL ? 'vercel' : 'local',
+              api_url: OLLAMA_API_URL
+            });
+          } else {
+            return res.json({ status: 'ok', ollama: 'unavailable', reason: 'Invalid response format' });
           }
-        } else {
-          return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', statusCode: response.status });
+        } catch (error) {
+          console.log('Health check error:', error.message);
+          return res.json({ status: 'ok', ollama: 'unavailable', error: 'Failed to parse response' });
         }
-      })
-      .catch(error => {
-        clearTimeout(timeoutId);
-        console.log('Health check error:', error.message);
-        return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', error: error.message });
-      });
+      } else {
+        return res.json({ status: 'ok', ollama: 'unavailable', statusCode: response.status });
+      }
+    } catch (error) {
+      console.log('Health check error:', error.message);
+      return res.json({ status: 'ok', ollama: 'unavailable', error: error.message });
+    }
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
   }
 });
 
@@ -516,5 +404,4 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`AI API URL: ${OLLAMA_API_URL}`);
-  console.log(`Mock data: ${USE_MOCK_DATA ? 'enabled' : 'auto (when AI API unavailable)'}`);
 }); 
