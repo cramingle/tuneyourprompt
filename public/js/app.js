@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage('user', goalText);
         
         // Add system response
-        addMessage('system', `${createFeatherIcon('cpu')} Great! Now write a prompt that you think will get the AI to create what you want.`);
+        addMessage('system', ` Great! Now write a prompt that you think will get the AI to create what you want.`);
         
         // Move to step 2
         updateProgress(2);
@@ -580,7 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     
                     // Add a system message
-                    addMessage('system', createFeatherIcon('message-circle') + ' Continue your conversation with the AI...');
+                    addMessage('system', ' Continue your conversation with the AI');
                 });
                 
                 // Create a left side container for try again and start over buttons
@@ -993,7 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             // Add a system message
-            addMessage('system', createFeatherIcon('message-circle') + ' Continue your conversation with the AI...');
+            addMessage('system', ' Continue your conversation with the AI');
         });
         
         // Create a left side container for try again and start over buttons
@@ -1527,7 +1527,7 @@ Please respond to the user's new message, taking into account the context of the
                         analysisPanel.classList.add('hidden');
                         
                         // Add a message indicating we're using the improved prompt
-                        addMessage('system', createFeatherIcon('magic') + ' Using the improved prompt to generate a better response...');
+                        addMessage('system', createFeatherIcon('magic') + ' Using the improved prompt to generate a better response');
                         
                         // Show loading overlay
                         showLoadingOverlay('Generating response');
