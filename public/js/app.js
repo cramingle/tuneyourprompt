@@ -225,6 +225,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     const errorMessage = errorData.message || errorData.error || `Server responded with status: ${response.status}`;
+                    console.error('Error response data:', errorData);
+                    
                     throw new Error(errorMessage);
                 }
                 
@@ -235,8 +237,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Add AI response message with typing animation
                 if (data.aiResponse) {
+                    console.log('AI Response received:', data.aiResponse.substring(0, 100) + '...');
                     addMessage('ai', data.aiResponse, '', true);
                 } else {
+                    console.log('No AI response received from server');
                     addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> No response received from the AI. Please try again.', '', false);
                     return; // Exit early if no response
                 }
@@ -590,34 +594,89 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add event listener for "Use This Prompt" button
     const useImprovedPromptBtn = document.getElementById('use-improved-prompt');
     if (useImprovedPromptBtn) {
-        useImprovedPromptBtn.addEventListener('click', async function() {
-            const improvedPrompt = document.getElementById('improved-prompt-text').textContent;
-            const goalText = document.getElementById('goal-input').value.trim();
-            
-            if (!improvedPrompt) return;
-            
-            // Hide the analysis panel
-            analysisPanel.classList.add('hidden');
-            
-            // Add a message indicating we're using the improved prompt
-            addMessage('system', '<i class="fas fa-magic fa-xs"></i> Using the improved prompt to generate a better response...');
-            
-            // Show loading state
-            loadingOverlay.style.display = 'flex';
-            loadingMessage.textContent = 'GENERATING RESPONSE...';
-            
+        useImprovedPromptBtn.addEventListener('click', async () => {
             try {
+                const improvedPrompt = window.currentAnalysisData?.improvedPrompt || 
+                    document.getElementById('improved-prompt-text').innerText;
+                const goalText = document.getElementById('goal-input').value.trim();
+                
+                if (!improvedPrompt) return;
+                
+                console.log('Using improved prompt:', improvedPrompt);
+                
+                // Hide the analysis panel
+                analysisPanel.classList.add('hidden');
+                
+                // Add a message indicating we're using the improved prompt
+                addMessage('system', '<i class="fas fa-magic fa-xs"></i> Using the improved prompt to generate a better response...');
+                
+                // Show loading overlay
+                loadingOverlay.style.display = 'flex';
+                loadingMessage.textContent = 'GENERATING RESPONSE...';
+                
+                console.log('Sending request to /api/generate with prompt:', improvedPrompt.substring(0, 100) + '...');
+                
                 const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ prompt: improvedPrompt })
+                    body: JSON.stringify({
+                        prompt: improvedPrompt,
+                        goal: goalText
+                    })
                 });
+                
+                console.log('Response status:', response.status);
                 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     const errorMessage = errorData.message || errorData.error || `Server responded with status: ${response.status}`;
+                    console.error('Error response data:', errorData);
+                    
+                    // If we get a 404, try to use the original prompt evaluation endpoint as a fallback
+                    if (response.status === 404) {
+                        console.log('Trying fallback to /api/evaluate endpoint');
+                        
+                        const fallbackResponse = await fetch('/api/evaluate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                prompt: improvedPrompt,
+                                goal: goalText
+                            })
+                        });
+                        
+                        if (fallbackResponse.ok) {
+                            const fallbackData = await fallbackResponse.json();
+                            if (fallbackData.aiResponse) {
+                                console.log('Successfully used fallback endpoint');
+                                
+                                // Hide loading overlay
+                                loadingOverlay.style.display = 'none';
+                                
+                                // Add a separator line in the chat
+                                const separator = document.createElement('div');
+                                separator.className = 'chat-separator';
+                                separator.innerHTML = '<span>Final Result</span>';
+                                chatMessages.appendChild(separator);
+                                
+                                // Add the final AI response to chat
+                                addMessage('ai', fallbackData.aiResponse);
+                                
+                                // Update progress to step 5 (Final)
+                                updateProgress(5);
+                                
+                                // Add Try Again and Start Over buttons
+                                addFinalStepButtons();
+                                
+                                return;
+                            }
+                        }
+                    }
+                    
                     throw new Error(errorMessage);
                 }
                 

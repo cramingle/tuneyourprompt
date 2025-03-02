@@ -226,15 +226,21 @@ async function analyzePromptQuality(prompt, goal) {
 }
 
 // Generate improved prompt suggestion
-async function generateImprovedPrompt(originalPrompt, goal, analysis) {
+async function generateImprovedPrompt(originalPrompt, goal, analysis, aiResponse = '') {
   try {
     // First try to use AI for generating an improved prompt
     const improvePrompt = `
     Original prompt: "${originalPrompt}"
     Goal: "${goal}"
+    Previous AI response: "${aiResponse.substring(0, 500)}"
     
     Create an improved version of this prompt that will better achieve the stated goal.
     The improved prompt should address any issues with clarity, detail, and relevance.
+    
+    Analyze what was missing in the original prompt based on:
+    1. Clarity score: ${analysis.clarity.score}/100 - ${analysis.clarity.feedback}
+    2. Detail score: ${analysis.detail.score}/100 - ${analysis.detail.feedback}
+    3. Relevance score: ${analysis.relevance.score}/100 - ${analysis.relevance.feedback}
     
     Return ONLY the improved prompt text with no additional explanation.
     `;
@@ -496,7 +502,7 @@ app.post('/api/evaluate', async (req, res) => {
     const qualityAnalysis = await analyzePromptQuality(prompt, goal);
     
     // Generate improved prompt suggestion
-    const improvedPrompt = await generateImprovedPrompt(prompt, goal, qualityAnalysis);
+    const improvedPrompt = await generateImprovedPrompt(prompt, goal, qualityAnalysis, aiResponse);
     
     // Return evaluation results
     res.json({
