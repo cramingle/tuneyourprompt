@@ -1,5 +1,49 @@
 // utils.js - Utility functions for the application
 
+// Loading tips to display during API calls
+const LOADING_TIPS = [
+    "Great prompts are specific, clear, and provide context.",
+    "Try including examples in your prompts for better results.",
+    "Consider the tone and style you want in the AI's response.",
+    "Break complex tasks into smaller, clearer instructions.",
+    "Specify the format you want for the response.",
+    "Provide relevant background information for context.",
+    "Be explicit about what you don't want in the response.",
+    "Review and refine your prompts based on the results you get."
+];
+
+// Loading messages for different operations
+const LOADING_MESSAGES = {
+    default: "Processing Request",
+    health: "Connecting to AI",
+    generate: "Crafting Response",
+    evaluate: "Analyzing Prompt",
+    retry: "Retrying Connection"
+};
+
+/**
+ * Update the loading message with a random tip or custom message
+ * @param {string} type - The type of loading message
+ * @param {string} customMessage - Optional custom message to display
+ */
+export function updateLoadingMessage(type = 'default', customMessage = null) {
+    const loadingElement = document.getElementById('loading-message');
+    if (!loadingElement) return;
+    
+    if (customMessage) {
+        loadingElement.textContent = customMessage;
+    } else {
+        loadingElement.textContent = LOADING_MESSAGES[type] || LOADING_MESSAGES.default;
+    }
+    
+    // Display a random tip
+    const tipElement = document.getElementById('loading-tip');
+    if (tipElement) {
+        const randomIndex = Math.floor(Math.random() * LOADING_TIPS.length);
+        tipElement.textContent = LOADING_TIPS[randomIndex];
+    }
+}
+
 /**
  * Add typing animation effect
  * @param {HTMLElement} element - The element to add text to

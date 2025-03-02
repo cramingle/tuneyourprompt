@@ -1,7 +1,7 @@
 // buttons.js - Button-related functions for the application
 import { addMessage, addSystemMessage, updateProgress } from './ui.js';
 import { continueChatConversation } from './api.js';
-import { updateLoadingMessage } from './main.js';
+import { updateLoadingMessage } from './utils.js';
 
 /**
  * Function to add Try Again and Start Over buttons for the final step
@@ -72,8 +72,15 @@ export function createChatInputArea(elements, onTryAgain, onStartOver) {
     const chatInputArea = document.createElement('div');
     chatInputArea.className = 'chat-input-area';
     chatInputArea.innerHTML = `
-        <textarea id="continue-chat-input" placeholder="Type your follow-up message..."></textarea>
-        <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+        <div class="input-container">
+            <textarea id="continue-chat-input" placeholder="Ask anything"></textarea>
+            <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+        <div class="action-buttons">
+            <button class="action-btn plus-btn"><i class="fas fa-plus"></i></button>
+            <button class="action-btn search-btn"><i class="fas fa-globe"></i> Search</button>
+            <button class="action-btn reason-btn"><i class="far fa-lightbulb"></i> Reason</button>
+        </div>
     `;
     
     // Replace the button row with the chat input area
@@ -96,8 +103,11 @@ export function createChatInputArea(elements, onTryAgain, onStartOver) {
         }
     });
     
-    // Add a system message
-    addSystemMessage('<i class="fas fa-comment fa-xs"></i> Continue your conversation with the AI...');
+    // Add a system message to prompt the user to continue the conversation
+    const systemMessage = document.createElement('div');
+    systemMessage.className = 'message system';
+    systemMessage.innerHTML = `<div class="message-content"><i class="fas fa-info-circle"></i> Continue your conversation with the AI.</div>`;
+    elements.messagesContainer.appendChild(systemMessage);
 }
 
 /**

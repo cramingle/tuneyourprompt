@@ -1,61 +1,14 @@
 // main.js - Main entry point for the application
-import { typeText, typeTextFormatted, formatAIResponse } from './utils.js';
+import { typeText, typeTextFormatted, formatAIResponse, updateLoadingMessage } from './utils.js';
 import { initUI, addMessage, addSystemMessage, updateProgress, setupAnalysisTabs, updateAnalysisPanel } from './ui.js';
 import { checkServerHealth, evaluatePrompt, generateResponse } from './api.js';
 import { addFinalStepButtons, createChatInputArea, addResultButtons } from './buttons.js';
-
-// Loading tips to display during API calls
-const LOADING_TIPS = [
-    "Great prompts are specific, clear, and provide context.",
-    "Try including examples in your prompts for better results.",
-    "Be explicit about the format you want in your response.",
-    "Specify your audience to get appropriately tailored content.",
-    "Adding 'step by step' to your prompt often yields more detailed responses.",
-    "For creative tasks, describe the style, tone, and mood you want.",
-    "When asking for code, specify the programming language and any constraints.",
-    "Longer prompts with more details generally produce better results.",
-    "Use system prompts to set the AI's behavior and knowledge context.",
-    "Chain of thought prompting helps AI solve complex problems.",
-    "For factual responses, ask the AI to cite its sources.",
-    "Prompt engineering is both an art and a science - practice makes perfect!"
-];
-
-// Loading messages for different operations
-const LOADING_MESSAGES = {
-    default: "Processing Request",
-    health: "Connecting to AI",
-    generate: "Crafting Response",
-    evaluate: "Analyzing Prompt",
-    retry: "Retrying Connection"
-};
 
 /**
  * Display a random loading tip
  */
 function displayRandomTip() {
-    const tipElement = document.getElementById('loading-tip');
-    if (tipElement) {
-        const randomIndex = Math.floor(Math.random() * LOADING_TIPS.length);
-        tipElement.textContent = LOADING_TIPS[randomIndex];
-    }
-}
-
-/**
- * Update the loading message
- * @param {string} type - The type of operation
- * @param {string} customMessage - Optional custom message
- */
-function updateLoadingMessage(type = 'default', customMessage = null) {
-    const messageElement = document.getElementById('loading-message');
-    if (messageElement) {
-        if (customMessage) {
-            messageElement.textContent = customMessage;
-        } else {
-            messageElement.textContent = LOADING_MESSAGES[type] || LOADING_MESSAGES.default;
-        }
-    }
-    // Always display a random tip when updating the message
-    displayRandomTip();
+    // This function is no longer needed as the functionality is now in updateLoadingMessage in utils.js
 }
 
 // Initialize the application when the DOM is loaded
@@ -387,7 +340,4 @@ function analyzePrompt(elements, promptText, goalText) {
             updateLoadingMessage('retry', retryMessage);
         }
     );
-}
-
-// Export functions for use in other modules
-export { updateLoadingMessage, displayRandomTip }; 
+} 
