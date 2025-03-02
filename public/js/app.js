@@ -147,9 +147,9 @@ document.addEventListener('DOMContentLoaded', () => {
             goalInputArea.className = 'input-area hidden';
             promptInputArea.className = 'input-area hidden';
             tryAgainArea.className = 'input-area';
-            // Show final result panel
+            // Always keep final result panel hidden, we're using chat separator instead
             analysisPanel.classList.add('hidden');
-            finalResultPanel.classList.remove('hidden');
+            finalResultPanel.classList.add('hidden');
         }
     }
     
@@ -224,7 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || `Server responded with status: ${response.status}`);
+                    const errorMessage = errorData.message || errorData.error || `Server responded with status: ${response.status}`;
+                    throw new Error(errorMessage);
                 }
                 
                 const data = await response.json();
@@ -236,11 +237,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.aiResponse) {
                     addMessage('ai', data.aiResponse, '', true);
                 } else {
-                    addMessage('ai', 'Sorry, I couldn\'t generate a response. Please try again.', '', true);
+                    addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> No response received from the AI. Please try again.', '', false);
+                    return; // Exit early if no response
                 }
                 
                 // Store the analysis data for later use
-                window.currentAnalysisData = data.analysis;
+                window.currentAnalysisData = {
+                    matchScore: data.matchPercentage,
+                    clarityScore: data.qualityAnalysis.clarity.score,
+                    detailScore: data.qualityAnalysis.detail.score,
+                    relevanceScore: data.qualityAnalysis.relevance.score,
+                    improvedPrompt: data.improvedPrompt,
+                    clarityFeedback: data.qualityAnalysis.clarity.feedback,
+                    detailFeedback: data.qualityAnalysis.detail.feedback,
+                    relevanceFeedback: data.qualityAnalysis.relevance.feedback
+                };
                 
                 // Move to step 3 (Result)
                 updateProgress(3);
@@ -330,15 +341,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 leftButtonsContainer.appendChild(tryAgainBtn);
                 leftButtonsContainer.appendChild(startOverBtn);
                 
+                // Add the left buttons container to the button row
+                buttonRow.appendChild(leftButtonsContainer);
+                
                 // Create a right side container for the analyze button
                 const rightButtonsContainer = document.createElement('div');
                 rightButtonsContainer.className = 'right-buttons';
                 rightButtonsContainer.appendChild(analyzeBtn);
                 
-                // Add both containers to the button row
-                buttonRow.appendChild(leftButtonsContainer);
+                // Add the right buttons container to the button row
                 buttonRow.appendChild(rightButtonsContainer);
                 
+                // Add the button row to the try-again-area
                 tryAgainArea.appendChild(buttonRow);
                 
             } catch (error) {
@@ -511,23 +525,28 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Set up metrics (clarity, detail, relevance)
         const metrics = [
-            { name: 'clarity', score: data.clarityScore || 80 },
-            { name: 'detail', score: data.detailScore || 70 },
-            { name: 'relevance', score: data.relevanceScore || 85 }
+            { name: 'clarity', score: data.clarityScore || 80, feedback: data.clarityFeedback || 'Consider adding more clarity to your prompt.' },
+            { name: 'detail', score: data.detailScore || 70, feedback: data.detailFeedback || 'Add more specific details to improve your prompt.' },
+            { name: 'relevance', score: data.relevanceScore || 85, feedback: data.relevanceFeedback || 'Make sure your prompt aligns with your goal.' }
         ];
         
         metrics.forEach(metric => {
-            const barFill = document.querySelector(`.${metric.name}-bar-fill`);
-            const score = document.querySelector(`.${metric.name}-score`);
+            const barFill = document.getElementById(`${metric.name}-bar`);
+            const score = document.getElementById(`${metric.name}-score`);
+            const feedback = document.getElementById(`${metric.name}-feedback`);
             
             if (barFill && score) {
                 barFill.style.width = `${metric.score}%`;
                 score.textContent = `${metric.score}%`;
             }
+            
+            if (feedback && metric.feedback) {
+                feedback.textContent = metric.feedback;
+            }
         });
         
         // Set up improved prompt
-        const improvedPromptText = document.querySelector('.improved-prompt-text');
+        const improvedPromptText = document.getElementById('improved-prompt-text');
         if (improvedPromptText && data.improvedPrompt) {
             improvedPromptText.textContent = data.improvedPrompt;
         }
@@ -563,62 +582,50 @@ document.addEventListener('DOMContentLoaded', () => {
         useImprovedPromptBtn.addEventListener('click', async function() {
             const improvedPrompt = document.getElementById('improved-prompt-text').textContent;
             const goalText = document.getElementById('goal-input').value.trim();
-            const promptInput = document.getElementById('prompt-input');
             
-            // Update the prompt input with the improved prompt
-            promptInput.value = improvedPrompt;
+            if (!improvedPrompt) return;
             
-            // Show loading overlay
+            // Hide the analysis panel
+            analysisPanel.classList.add('hidden');
+            
+            // Add a message indicating we're using the improved prompt
+            addMessage('system', '<i class="fas fa-magic fa-xs"></i> Using the improved prompt to generate a better response...');
+            
+            // Show loading state
             loadingOverlay.style.display = 'flex';
-            loadingMessage.textContent = 'GENERATING FINAL RESULT...';
+            loadingMessage.textContent = 'GENERATING RESPONSE...';
             
             try {
-                // Set a timeout for the request
-                const controller = new AbortController();
-                const timeoutDuration = 30000; // 30 seconds
-                const timeoutId = setTimeout(() => {
-                    console.log(`API request timed out after ${timeoutDuration/1000} seconds`);
-                    controller.abort();
-                }, timeoutDuration);
-                
-                // Call the API with the improved prompt but skip analysis
-                const response = await fetch('/api/evaluate', {
+                const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        prompt: improvedPrompt,
-                        goal: goalText,
-                        skipAnalysis: true // Add this flag to indicate we just want the response
-                    }),
-                    signal: controller.signal
+                    body: JSON.stringify({ prompt: improvedPrompt })
                 });
                 
-                // Clear the timeout
-                clearTimeout(timeoutId);
-                
                 if (!response.ok) {
-                    throw new Error(`API responded with status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.message || errorData.error || `Server responded with status: ${response.status}`;
+                    throw new Error(errorMessage);
                 }
                 
                 const data = await response.json();
                 
-                // Hide loading overlay
-                loadingOverlay.style.display = 'none';
+                if (!data.response) {
+                    throw new Error('No response received from the AI');
+                }
                 
-                // Show the final result panel
-                const finalResultText = document.getElementById('final-result-text');
-                finalResultText.textContent = data.aiResponse;
-                finalResultPanel.classList.remove('hidden');
+                // Add a separator line in the chat
+                const separator = document.createElement('div');
+                separator.className = 'chat-separator';
+                separator.innerHTML = '<span>Final Result</span>';
+                chatMessages.appendChild(separator);
                 
-                // Add the AI response to the chat as well
-                addMessage('ai', data.aiResponse, '', true);
+                // Add the final AI response to chat
+                addMessage('ai', data.response);
                 
-                // Close the analysis panel
-                analysisPanel.classList.add('hidden');
-                
-                // Move to step 5 (Final Result)
+                // Update progress to step 5 (Final)
                 updateProgress(5);
                 
                 // Add Try Again and Start Over buttons to the try-again-area
@@ -689,77 +696,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 leftButtonsContainer.appendChild(tryAgainBtn);
                 leftButtonsContainer.appendChild(startOverBtn);
                 
-                // Create a right side container for the analyze button
-                const rightButtonsContainer = document.createElement('div');
-                rightButtonsContainer.className = 'right-buttons';
-                rightButtonsContainer.appendChild(analyzeBtn);
-                
-                // Add both containers to the button row
+                // Add the left buttons container to the button row
                 buttonRow.appendChild(leftButtonsContainer);
-                buttonRow.appendChild(rightButtonsContainer);
                 
+                // We don't need the right buttons container here since we're in the final step
                 tryAgainArea.appendChild(buttonRow);
                 
             } catch (error) {
-                console.error('Error getting final result:', error);
-                
-                // Hide loading overlay
+                console.error('Error generating response:', error);
+                addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> ${error.message || 'Failed to generate response. Please try again.'}`);
+            } finally {
                 loadingOverlay.style.display = 'none';
-                
-                // Show error message
-                addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> Error getting final result: ${error.message}. Please try again.`);
             }
         });
     }
-
-    // Add event listener for the "Use Improved Prompt" button
-    document.querySelector('.use-improved-prompt').addEventListener('click', async () => {
-        const improvedPromptText = document.querySelector('.improved-prompt-text').textContent;
-        if (!improvedPromptText) return;
-        
-        // Hide the analysis panel
-        analysisPanel.classList.add('hidden');
-        
-        // Add a message indicating we're using the improved prompt
-        addMessage('system', 'Using the improved prompt to generate a better response...');
-        
-        // Show loading state
-        loadingOverlay.classList.add('active');
-        loadingMessage.textContent = 'Generating response with improved prompt...';
-        
-        try {
-            const response = await fetch('/api/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ prompt: improvedPromptText })
-            });
-            
-            if (!response.ok) {
-                throw new Error('Failed to generate response');
-            }
-            
-            const data = await response.json();
-            
-            // Add a separator line in the chat
-            const separator = document.createElement('div');
-            separator.className = 'chat-separator';
-            separator.innerHTML = '<span>Final Result</span>';
-            chatMessages.appendChild(separator);
-            
-            // Add the final AI response to chat
-            addMessage('ai', data.response);
-            
-            // Update progress
-            updateProgress(5);
-        } catch (error) {
-            console.error('Error generating response:', error);
-            addMessage('system', 'Failed to generate response. Please try again.');
-        } finally {
-            loadingOverlay.classList.remove('active');
-        }
-    });
 
     // Add CSS for the chat separator
     const style = document.createElement('style');
@@ -790,56 +740,10 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     document.head.appendChild(style);
 
-    // Update the analyzeBtn event listener - using the correct ID
-    document.addEventListener('DOMContentLoaded', () => {
-        // We'll check if the button exists before adding the event listener
-        const analyzeBtn = document.getElementById('analyze-prompt-btn');
-        if (analyzeBtn) {
-            analyzeBtn.addEventListener('click', async () => {
-                const promptText = promptInput.value.trim();
-                if (!promptText) return;
-                
-                // Show loading state
-                analyzeBtn.disabled = true;
-                analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                
-                try {
-                    const response = await fetch('/api/analyze-prompt', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ prompt: promptText })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to analyze prompt');
-                    }
-                    
-                    const data = await response.json();
-                    
-                    // Update the analysis panel with the results
-                    updateAnalysisPanel(data);
-                    
-                    // Show the analysis panel and update progress
-                    analysisPanel.classList.remove('hidden');
-                    updateProgress(4);
-                } catch (error) {
-                    console.error('Error analyzing prompt:', error);
-                    addSystemMessage('Failed to analyze prompt. Please try again.');
-                } finally {
-                    // Reset button state
-                    analyzeBtn.disabled = false;
-                    analyzeBtn.innerHTML = '<i class="fas fa-chart-bar"></i>';
-                }
-            });
-        }
-    });
-
     // Function to add system messages to the chat
     function addSystemMessage(text) {
         const systemMessage = document.createElement('div');
-        systemMessage.className = 'chat-message system-message';
+        systemMessage.className = 'message system';
         systemMessage.innerHTML = `
             <div class="message-content">
                 <p>${text}</p>

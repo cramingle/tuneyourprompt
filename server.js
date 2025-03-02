@@ -252,15 +252,22 @@ app.post('/api/evaluate', async (req, res) => {
       }
       
     } catch (error) {
-      console.log('API error, using mock response:', error.message);
-      // If API is not available or times out, generate a mock response
-      aiResponse = generateMockResponse(prompt, goal);
+      console.log('API error:', error.message);
+      // Return the actual error instead of using mock data
+      return res.status(500).json({ 
+        error: 'API error', 
+        details: error.message,
+        message: 'Failed to get response from AI API. Please try again later.'
+      });
     }
     
     // Ensure aiResponse is not undefined before calculating similarity
     if (!aiResponse) {
-      console.log('aiResponse is undefined, using mock response');
-      aiResponse = generateMockResponse(prompt, goal);
+      console.log('aiResponse is undefined');
+      return res.status(500).json({ 
+        error: 'Empty response', 
+        message: 'Received empty response from AI API. Please try again later.'
+      });
     }
     
     console.log('Final AI response:', aiResponse.substring(0, 100) + '...');
@@ -383,15 +390,22 @@ app.post('/api/generate', async (req, res) => {
       }
       
     } catch (error) {
-      console.log('API error, using mock response:', error.message);
-      // If API is not available or times out, generate a mock response
-      response = generateMockResponse(prompt, "");
+      console.log('API error:', error.message);
+      // Return the actual error instead of using mock data
+      return res.status(500).json({ 
+        error: 'API error', 
+        details: error.message,
+        message: 'Failed to get response from AI API. Please try again later.'
+      });
     }
     
     // Ensure response is not undefined
     if (!response) {
-      console.log('Response is undefined, using mock response');
-      response = generateMockResponse(prompt, "");
+      console.log('Response is undefined');
+      return res.status(500).json({ 
+        error: 'Empty response', 
+        message: 'Received empty response from AI API. Please try again later.'
+      });
     }
     
     console.log('Final response:', response.substring(0, 100) + '...');

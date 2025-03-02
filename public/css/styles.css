@@ -885,6 +885,7 @@ footer a:hover {
 
 /* Final Result Panel */
 .final-result-panel {
+    display: none !important; /* Always hide the panel */
     position: fixed;
     top: 50%;
     left: 50%;
@@ -955,16 +956,57 @@ footer a:hover {
 @media (max-width: 768px) {
     .analysis-panel {
         position: fixed;
-        left: 10px;
-        right: 10px;
+        left: 0;
+        right: 0;
         top: auto;
-        bottom: 10px;
-        width: auto;
-        max-height: 50vh;
+        bottom: 0;
+        width: 100%;
+        max-width: 100%;
+        max-height: 80vh;
+        border-radius: 12px 12px 0 0;
+        transform: translateY(0);
     }
     
     .analysis-panel.hidden {
         transform: translateY(100%);
+    }
+    
+    .analysis-tabs {
+        padding: 10px 5px;
+        overflow-x: auto;
+    }
+    
+    .tab-button {
+        padding: 8px 12px;
+        font-size: 0.7rem;
+        min-width: auto;
+    }
+    
+    .match-value {
+        font-size: 2rem;
+    }
+    
+    .metric-header {
+        padding: 10px;
+    }
+    
+    .metric-feedback {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .analysis-panel {
+        max-height: 90vh;
+    }
+    
+    .tab-button {
+        padding: 6px 8px;
+        font-size: 0.65rem;
+    }
+    
+    .analysis-title {
+        font-size: 0.9rem;
     }
 }
 
