@@ -310,6 +310,171 @@ function generateMockResponse(prompt, goal) {
   return response;
 }
 
+// Function to analyze the prompt specifically for the Metis model
+async function analyzePromptForMetis(prompt, goal) {
+  try {
+    // Create a prompt for the AI to analyze the user's prompt
+    const analysisPrompt = `
+      You are an AI prompt analysis expert. Analyze the following prompt based on how well it would work for a general AI assistant (not an email template generator).
+      
+      User's goal: "${goal}"
+      User's prompt: "${prompt}"
+      
+      Analyze the prompt for:
+      1. Clarity (0-100): How clear and specific is the prompt?
+      2. Detail (0-100): How detailed and informative is the prompt?
+      3. Relevance (0-100): How relevant is the prompt to the user's stated goal?
+      
+      For each category, provide a score and brief feedback.
+      Also suggest an improved version of the prompt.
+      
+      Format your response as a JSON object with this structure:
+      {
+        "clarity": {"score": number, "feedback": "string"},
+        "detail": {"score": number, "feedback": "string"},
+        "relevance": {"score": number, "feedback": "string"},
+        "improvedPrompt": "string"
+      }
+    `;
+    
+    // Set a timeout for the analysis request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    
+    const analysisResponse = await fetch(`${OLLAMA_API_URL}/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'metis',
+        prompt: analysisPrompt,
+        stream: false
+      }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!analysisResponse.ok) {
+      throw new Error(`Analysis API responded with status: ${analysisResponse.status}`);
+    }
+    
+    const analysisData = await analysisResponse.json();
+    let analysisContent = '';
+    
+    // Extract the content based on the response type
+    if (analysisData.type === 'text' && analysisData.content) {
+      analysisContent = analysisData.content;
+    } else if (analysisData.response) {
+      analysisContent = analysisData.response;
+    } else if (analysisData.content && typeof analysisData.content === 'object') {
+      // If the content is already a JSON object, use it directly
+      return analysisData.content;
+    } else {
+      throw new Error('Unexpected analysis response format');
+    }
+    
+    // Try to extract JSON from the response
+    const jsonMatch = analysisContent.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const analysis = JSON.parse(jsonMatch[0]);
+        
+        // Validate the analysis structure
+        if (analysis.clarity && analysis.detail && analysis.relevance && analysis.improvedPrompt) {
+          // Ensure scores are numbers between 0-100
+          analysis.clarity.score = Math.min(100, Math.max(0, parseInt(analysis.clarity.score) || 0));
+          analysis.detail.score = Math.min(100, Math.max(0, parseInt(analysis.detail.score) || 0));
+          analysis.relevance.score = Math.min(100, Math.max(0, parseInt(analysis.relevance.score) || 0));
+          
+          return analysis;
+        }
+      } catch (e) {
+        console.error('Error parsing analysis JSON:', e);
+      }
+    }
+    
+    throw new Error('Could not extract valid analysis from response');
+    
+  } catch (error) {
+    console.error('Error in analyzePromptForMetis:', error);
+    return null;
+  }
+}
+
+// Generate mock analysis data
+function generateMockAnalysis(prompt, goal) {
+  // Basic analysis based on prompt length and goal keyword matching
+  const wordCount = prompt.split(/\s+/).length;
+  const goalWords = goal.toLowerCase().split(/\s+/).filter(word => word.length > 3);
+  const matchedKeywords = goalWords.filter(keyword => prompt.toLowerCase().includes(keyword));
+  const relevanceScore = Math.min(100, Math.round((matchedKeywords.length / Math.max(1, goalWords.length)) * 100));
+  
+  // Generate clarity score based on prompt structure
+  let clarityScore = 0;
+  const clarityKeywords = ['tone', 'style', 'format', 'audience', 'purpose', 'voice', 'perspective', 'mood'];
+  const clarityMatches = clarityKeywords.filter(keyword => prompt.toLowerCase().includes(keyword));
+  clarityScore = Math.min(100, clarityMatches.length * 25 + 25);
+  
+  // Generate detail score based on word count
+  let detailScore = 0;
+  if (wordCount >= 30) detailScore = 90;
+  else if (wordCount >= 20) detailScore = 75;
+  else if (wordCount >= 10) detailScore = 50;
+  else detailScore = 25;
+  
+  // Generate feedback based on scores
+  let clarityFeedback, detailFeedback, relevanceFeedback;
+  
+  if (clarityScore >= 75) {
+    clarityFeedback = `Your prompt is very clear and specific.`;
+  } else if (clarityScore >= 50) {
+    clarityFeedback = `Your prompt has decent clarity but could be more specific about what you want.`;
+  } else {
+    clarityFeedback = `Your prompt lacks clarity. Try specifying tone, style, or format.`;
+  }
+  
+  if (detailScore >= 75) {
+    detailFeedback = `Your prompt has good detail with ${wordCount} words.`;
+  } else if (detailScore >= 50) {
+    detailFeedback = `Your prompt has moderate detail but could use more specific information.`;
+  } else {
+    detailFeedback = `Your prompt lacks detail. Try adding more specific information.`;
+  }
+  
+  if (relevanceScore >= 75) {
+    relevanceFeedback = `Your prompt is highly relevant to your goal.`;
+  } else if (relevanceScore >= 50) {
+    relevanceFeedback = `Your prompt is somewhat relevant to your goal but misses some key elements.`;
+  } else {
+    relevanceFeedback = `Your prompt doesn't seem to address your goal well.`;
+  }
+  
+  // Generate improved prompt suggestion
+  let improvedPrompt = prompt;
+  
+  // Add clarity if missing
+  if (clarityScore < 70) {
+    improvedPrompt += ` Please provide this information with a clear, informative tone.`;
+  }
+  
+  // Add relevance if missing
+  if (relevanceScore < 70) {
+    const missingKeywords = goalWords.filter(keyword => !matchedKeywords.includes(keyword));
+    if (missingKeywords.length > 0) {
+      improvedPrompt += ` Make sure to include information about ${missingKeywords.join(', ')}.`;
+    }
+  }
+  
+  return {
+    clarity: { score: clarityScore, feedback: clarityFeedback },
+    detail: { score: detailScore, feedback: detailFeedback },
+    relevance: { score: relevanceScore, feedback: relevanceFeedback },
+    improvedPrompt: improvedPrompt
+  };
+}
+
 // API endpoint to evaluate prompts
 app.post('/api/evaluate', async (req, res) => {
   try {
@@ -328,8 +493,8 @@ app.post('/api/evaluate', async (req, res) => {
         throw new Error('Using mock data as specified in environment');
       }
       
-      // Since this API seems to be designed for email templates, let's try a different approach
-      const enhancedPrompt = `Create a plain text response (no HTML) for the following prompt: ${prompt}`;
+      // Create a prompt that focuses on general AI interaction rather than email templates
+      const enhancedPrompt = `You are a helpful AI assistant. Please respond to the following prompt: ${prompt}`;
       
       console.log('Sending prompt to API:', enhancedPrompt);
       
@@ -413,92 +578,17 @@ app.post('/api/evaluate', async (req, res) => {
         throw new Error('Unexpected API response format');
       }
       
-      // Now that we have the AI response, let's ask the AI to analyze the prompt
-      if (aiResponse) {
-        try {
-          console.log('Requesting AI analysis of the prompt...');
-          
-          const analysisPrompt = `
-You are an expert in prompt engineering. Analyze this prompt and provide feedback:
-
-USER'S GOAL: "${goal}"
-
-USER'S PROMPT: "${prompt}"
-
-AI RESPONSE: "${aiResponse.substring(0, 500)}${aiResponse.length > 500 ? '...' : ''}"
-
-Provide a JSON object with the following structure:
-{
-  "clarity": {
-    "score": [0-100 score based on how clear the prompt is],
-    "feedback": "Specific, helpful feedback about the clarity of the prompt"
-  },
-  "detail": {
-    "score": [0-100 score based on the level of detail in the prompt],
-    "feedback": "Specific, helpful feedback about the detail level of the prompt"
-  },
-  "relevance": {
-    "score": [0-100 score based on how relevant the prompt is to the goal],
-    "feedback": "Specific, helpful feedback about the relevance of the prompt to the goal"
-  },
-  "improvedPrompt": "A suggested improved version of the prompt that addresses the issues identified"
-}
-
-Your analysis should be thoughtful and specific to this prompt, not generic. Focus on how well the prompt achieves the user's goal.
-`;
-          
-          // Set a timeout for the analysis request
-          const analysisController = new AbortController();
-          const analysisTimeoutId = setTimeout(() => {
-            console.log(`Analysis request timed out after ${timeoutDuration/1000} seconds`);
-            analysisController.abort();
-          }, timeoutDuration);
-          
-          const analysisResponse = await fetch(`${OLLAMA_API_URL}/ai/chat`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'metis',
-              prompt: analysisPrompt,
-              stream: false
-            }),
-            signal: analysisController.signal
-          });
-          
-          // Clear the timeout
-          clearTimeout(analysisTimeoutId);
-          
-          if (analysisResponse.ok) {
-            const analysisData = await analysisResponse.json();
-            console.log('Analysis response:', JSON.stringify(analysisData).substring(0, 200) + '...');
-            
-            // Try to extract JSON from the response
-            let jsonStr = '';
-            
-            if (analysisData.type === 'text' && analysisData.content) {
-              jsonStr = analysisData.content;
-            } else if (analysisData.response) {
-              jsonStr = analysisData.response;
-            } else if (analysisData.content && analysisData.content.message) {
-              jsonStr = analysisData.content.message;
-            }
-            
-            // Extract JSON object from the response text
-            const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              try {
-                promptAnalysis = JSON.parse(jsonMatch[0]);
-                console.log('Successfully parsed AI analysis:', promptAnalysis);
-              } catch (parseError) {
-                console.error('Failed to parse AI analysis JSON:', parseError);
-              }
-            }
-          }
-        } catch (analysisError) {
-          console.error('Error getting AI analysis:', analysisError);
+      // Now get AI analysis of the prompt
+      try {
+        console.log('Getting AI analysis of prompt...');
+        promptAnalysis = await analyzePromptForMetis(prompt, goal);
+        if (promptAnalysis) {
+          console.log('AI analysis successful');
+        } else {
+          console.log('AI analysis returned null, will use fallback analysis');
         }
+      } catch (analysisError) {
+        console.error('Error getting AI analysis:', analysisError);
       }
       
     } catch (error) {
@@ -536,10 +626,15 @@ Your analysis should be thoughtful and specific to this prompt, not generic. Foc
       improvedPrompt = promptAnalysis.improvedPrompt;
       console.log('Using AI-generated analysis');
     } else {
-      // Fall back to predefined analysis
-      console.log('Falling back to predefined analysis');
-      qualityAnalysis = analyzePromptQuality(prompt, goal);
-      improvedPrompt = generateImprovedPrompt(prompt, goal, qualityAnalysis);
+      // Fall back to mock analysis
+      console.log('Falling back to mock analysis');
+      const mockAnalysis = generateMockAnalysis(prompt, goal);
+      qualityAnalysis = {
+        clarity: mockAnalysis.clarity,
+        detail: mockAnalysis.detail,
+        relevance: mockAnalysis.relevance
+      };
+      improvedPrompt = mockAnalysis.improvedPrompt;
     }
     
     // Return evaluation results
