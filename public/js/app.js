@@ -451,9 +451,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 console.log('Server health:', data);
                 
+                // Always trust the server's response about API availability
                 if (data.ollama === 'connected') {
                     ollamaAvailable = true;
                     console.log('AI API is available');
+                    
+                    // If we're on Vercel, log additional information
+                    if (data.environment === 'vercel') {
+                        console.log('Running on Vercel environment with API URL:', data.api_url);
+                    }
                 } else {
                     ollamaAvailable = false;
                     console.warn('AI API is not available, using mock responses:', data);
