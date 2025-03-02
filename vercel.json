@@ -11,7 +11,7 @@
     { "src": "/(.*)", "dest": "/api/server.js" }
   ],
   "env": {
-    "OLLAMA_API_URL": "https://ai.mailbyai.site",
+    "OLLAMA_API_URL": "https://ai.zirodelta.com",
     "VERCEL": "1"
   }
 } 

@@ -10,7 +10,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'https://ai.mailbyai.site';
+const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'https://ai.zirodelta.com';
 const IS_VERCEL = process.env.VERCEL === '1';
 
 // Log environment on startup
@@ -306,13 +306,13 @@ async function analyzePromptForMetis(prompt, goal) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     
-    const analysisResponse = await fetch(`${OLLAMA_API_URL}/ai/chat`, {
+    const analysisResponse = await fetch(`${OLLAMA_API_URL}/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'metis',
+        model: 'mistral',
         prompt: analysisPrompt,
         stream: false
       }),
@@ -397,13 +397,13 @@ app.post('/api/evaluate', async (req, res) => {
       
       console.log(`Setting API timeout to ${timeoutDuration/1000} seconds`);
       
-      const apiResponse = await fetch(`${OLLAMA_API_URL}/ai/chat`, {
+      const apiResponse = await fetch(`${OLLAMA_API_URL}/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'metis',
+          model: 'mistral',
           prompt: enhancedPrompt,
           stream: false
         }),
@@ -595,13 +595,13 @@ app.get('/api/health', (req, res) => {
     controller.abort();
   }, 30000); // 30 second timeout for health checks
   
-  fetch(`${OLLAMA_API_URL}/ai/chat`, {
+  fetch(`${OLLAMA_API_URL}/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'metis',
+      model: 'mistral',
       prompt: 'Hello',
       stream: false
     }),

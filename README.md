@@ -1,6 +1,6 @@
 # TuneYourPrompt
 
-A mobile-optimized website designed to teach people how to craft effective AI prompts using the Metis model.
+A mobile-optimized website designed to teach people how to craft effective AI prompts using the Mistral model.
 
 ## Overview
 
@@ -37,7 +37,7 @@ Create a `.env` file with the following variables:
 
 ```
 PORT=3000
-OLLAMA_API_URL=https://ai.mailbyai.site
+OLLAMA_API_URL=https://ai.zirodelta.com
 ```
 
 ## Deployment to Vercel

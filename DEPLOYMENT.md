@@ -6,7 +6,7 @@ This guide will help you deploy TuneYourPrompt on an Ubuntu server using Nginx a
 
 - Ubuntu server (20.04 LTS or newer)
 - Node.js 14+ and npm
-- Ollama installed with the Metis model
+- Ollama installed with the Mistral model
 - A Cloudflare account
 
 ## Step 1: Install Required Software
@@ -27,11 +27,11 @@ sudo apt install -y nginx
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-## Step 2: Install and Pull the Metis Model
+## Step 2: Install and Pull the Mistral Model
 
 ```bash
-# Pull the Metis model
-ollama pull metis
+# Pull the Mistral model
+ollama pull mistral
 ```
 
 ## Step 3: Clone and Set Up the Application
