@@ -290,9 +290,14 @@ app.post('/api/evaluate', async (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  console.log('Health check requested');
+  
   // Set a shorter timeout for health checks to avoid Vercel timeouts
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout for health checks
+  const timeoutId = setTimeout(() => {
+    console.log('Health check timeout triggered');
+    controller.abort();
+  }, 10000); // 10 second timeout for health checks
   
   // If we're on Vercel, use a faster approach
   if (IS_VERCEL) {
@@ -313,19 +318,27 @@ app.get('/api/health', (req, res) => {
     })
       .then(async response => {
         clearTimeout(timeoutId);
+        console.log('Health check API response status:', response.status);
+        
         if (response.ok) {
           try {
             // Try to parse the response to verify it's valid
             const data = await response.json();
+            console.log('Health check API response data:', JSON.stringify(data).substring(0, 100) + '...');
+            
             if (data && (data.type === 'text' || data.type === 'email_template' || data.content || data.response)) {
+              console.log('Health check success: API is connected');
               return res.json({ status: 'ok', ollama: 'connected' });
             } else {
+              console.log('Health check warning: Invalid response format');
               return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', reason: 'Invalid response format' });
             }
           } catch (error) {
+            console.log('Health check error: Failed to parse response', error.message);
             return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', error: 'Failed to parse response' });
           }
         } else {
+          console.log('Health check error: API responded with status', response.status);
           return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', statusCode: response.status });
         }
       })
@@ -336,6 +349,7 @@ app.get('/api/health', (req, res) => {
       });
   } else {
     // For local development, we can afford a slightly longer timeout
+    console.log('Running locally, performing standard health check');
     fetch(`${OLLAMA_API_URL}/ai/chat`, {
       method: 'POST',
       headers: {
@@ -350,19 +364,27 @@ app.get('/api/health', (req, res) => {
     })
       .then(async response => {
         clearTimeout(timeoutId);
+        console.log('Health check API response status:', response.status);
+        
         if (response.ok) {
           try {
             // Try to parse the response to verify it's valid
             const data = await response.json();
+            console.log('Health check API response data:', JSON.stringify(data).substring(0, 100) + '...');
+            
             if (data && (data.type === 'text' || data.type === 'email_template' || data.content || data.response)) {
+              console.log('Health check success: API is connected');
               return res.json({ status: 'ok', ollama: 'connected' });
             } else {
+              console.log('Health check warning: Invalid response format');
               return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', reason: 'Invalid response format' });
             }
           } catch (error) {
+            console.log('Health check error: Failed to parse response', error.message);
             return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', error: 'Failed to parse response' });
           }
         } else {
+          console.log('Health check error: API responded with status', response.status);
           return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', statusCode: response.status });
         }
       })

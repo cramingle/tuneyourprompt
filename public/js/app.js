@@ -456,11 +456,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('AI API is available');
                 } else {
                     ollamaAvailable = false;
-                    console.warn('AI API is not available, using mock responses');
+                    console.warn('AI API is not available, using mock responses:', data);
                     addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> Note: AI API is not available. The app will use simulated AI responses.');
                 }
             } else {
-                console.warn('Server health check failed');
+                console.warn('Server health check failed with status:', response.status);
                 ollamaAvailable = false;
                 addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> Warning: Server health check failed. The app will use simulated AI responses.');
             }
