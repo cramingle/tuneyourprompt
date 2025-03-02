@@ -47,7 +47,85 @@ function calculateSimilarity(text1, text2) {
 }
 
 // Analyze prompt quality
-function analyzePromptQuality(prompt, goal) {
+async function analyzePromptQuality(prompt, goal) {
+  try {
+    // First try to use AI for analysis
+    const analysisPrompt = `
+    Analyze this AI prompt: "${prompt}"
+    Goal: "${goal}"
+    
+    Provide a detailed analysis with scores (0-100) and feedback for:
+    1. Clarity: Does it specify tone, style, format, audience, or purpose?
+    2. Detail: Is it specific and detailed enough?
+    3. Relevance: Does it align with the stated goal?
+    
+    Format your response as JSON:
+    {
+      "clarity": {"score": number, "feedback": "string"},
+      "detail": {"score": number, "feedback": "string"},
+      "relevance": {"score": number, "feedback": "string"}
+    }
+    `;
+    
+    console.log('Sending analysis prompt to AI API');
+    
+    const controller = new AbortController();
+    const timeoutDuration = IS_VERCEL ? 8000 : 15000; // shorter timeout for analysis
+    const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+    
+    const apiResponse = await fetch(`${OLLAMA_API_URL}/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'metis',
+        prompt: analysisPrompt,
+        stream: false
+      }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (apiResponse.ok) {
+      const data = await apiResponse.json();
+      let analysisText = '';
+      
+      if (data.type === 'text' && data.content) {
+        analysisText = data.content;
+      } else if (data.response) {
+        analysisText = data.response;
+      } else if (data.content && data.content.message) {
+        analysisText = data.content.message;
+      }
+      
+      // Try to extract JSON from the response
+      try {
+        // Look for JSON pattern in the text
+        const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const jsonStr = jsonMatch[0];
+          const analysisData = JSON.parse(jsonStr);
+          
+          // Validate the structure
+          if (analysisData.clarity && analysisData.detail && analysisData.relevance) {
+            console.log('Successfully parsed AI analysis');
+            return analysisData;
+          }
+        }
+      } catch (jsonError) {
+        console.log('Failed to parse JSON from AI response:', jsonError);
+      }
+    }
+    
+    // If AI analysis fails, fall back to rule-based analysis
+    console.log('Falling back to rule-based analysis');
+  } catch (error) {
+    console.log('Error in AI analysis, falling back to rule-based:', error.message);
+  }
+  
+  // Fallback to rule-based analysis
   const analysis = {
     clarity: { score: 0, feedback: '' },
     detail: { score: 0, feedback: '' },
@@ -83,7 +161,65 @@ function analyzePromptQuality(prompt, goal) {
 }
 
 // Generate improved prompt suggestion
-function generateImprovedPrompt(originalPrompt, goal, analysis) {
+async function generateImprovedPrompt(originalPrompt, goal, analysis) {
+  try {
+    // First try to use AI for generating an improved prompt
+    const improvePrompt = `
+    Original prompt: "${originalPrompt}"
+    Goal: "${goal}"
+    
+    Create an improved version of this prompt that will better achieve the stated goal.
+    The improved prompt should address any issues with clarity, detail, and relevance.
+    
+    Return ONLY the improved prompt text with no additional explanation.
+    `;
+    
+    console.log('Sending improve prompt request to AI API');
+    
+    const controller = new AbortController();
+    const timeoutDuration = IS_VERCEL ? 8000 : 15000; // shorter timeout
+    const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+    
+    const apiResponse = await fetch(`${OLLAMA_API_URL}/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'metis',
+        prompt: improvePrompt,
+        stream: false
+      }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (apiResponse.ok) {
+      const data = await apiResponse.json();
+      let improvedText = '';
+      
+      if (data.type === 'text' && data.content) {
+        improvedText = data.content;
+      } else if (data.response) {
+        improvedText = data.response;
+      } else if (data.content && data.content.message) {
+        improvedText = data.content.message;
+      }
+      
+      if (improvedText && improvedText.trim()) {
+        console.log('Successfully generated AI improved prompt');
+        return improvedText.trim();
+      }
+    }
+    
+    // If AI improvement fails, fall back to rule-based improvement
+    console.log('Falling back to rule-based prompt improvement');
+  } catch (error) {
+    console.log('Error in AI prompt improvement, falling back to rule-based:', error.message);
+  }
+  
+  // Fallback to rule-based improvement
   let suggestion = originalPrompt;
   
   // Add clarity if missing
@@ -237,10 +373,10 @@ app.post('/api/evaluate', async (req, res) => {
     const matchPercentage = calculateSimilarity(aiResponse, goal);
     
     // Analyze prompt quality
-    const qualityAnalysis = analyzePromptQuality(prompt, goal);
+    const qualityAnalysis = await analyzePromptQuality(prompt, goal);
     
     // Generate improved prompt suggestion
-    const improvedPrompt = generateImprovedPrompt(prompt, goal, qualityAnalysis);
+    const improvedPrompt = await generateImprovedPrompt(prompt, goal, qualityAnalysis);
     
     // Return evaluation results
     res.json({
