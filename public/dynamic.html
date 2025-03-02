@@ -23,20 +23,6 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://tuneyourprompt.vercel.app/">
-    <meta property="og:title" content="TuneYourPrompt - Learn AI Prompting">
-    <meta property="og:description" content="A mobile-optimized tool to help you craft better AI prompts and improve your results">
-    <meta property="og:image" content="img/og-image.jpg">
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://tuneyourprompt.vercel.app/">
-    <meta property="twitter:title" content="TuneYourPrompt - Learn AI Prompting">
-    <meta property="twitter:description" content="A mobile-optimized tool to help you craft better AI prompts and improve your results">
-    <meta property="twitter:image" content="img/og-image.jpg">
-    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     
@@ -225,8 +211,9 @@
         </div>
     </div>
 
-    <!-- Replace multiple script tags with a single module import for main-dynamic.js -->
+    <!-- Use the dynamic import version of main.js -->
     <script type="module" src="js/main-dynamic.js"></script>
+    
     <!-- Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
