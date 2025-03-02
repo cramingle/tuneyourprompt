@@ -478,7 +478,7 @@ function generateMockAnalysis(prompt, goal) {
 // API endpoint to evaluate prompts
 app.post('/api/evaluate', async (req, res) => {
   try {
-    const { prompt, goal } = req.body;
+    const { prompt, goal, skipAnalysis } = req.body;
     
     if (!prompt || !goal) {
       return res.status(400).json({ error: 'Prompt and goal are required' });
@@ -578,17 +578,19 @@ app.post('/api/evaluate', async (req, res) => {
         throw new Error('Unexpected API response format');
       }
       
-      // Now get AI analysis of the prompt
-      try {
-        console.log('Getting AI analysis of prompt...');
-        promptAnalysis = await analyzePromptForMetis(prompt, goal);
-        if (promptAnalysis) {
-          console.log('AI analysis successful');
-        } else {
-          console.log('AI analysis returned null, will use fallback analysis');
+      // Now get AI analysis of the prompt if not skipped
+      if (!skipAnalysis) {
+        try {
+          console.log('Getting AI analysis of prompt...');
+          promptAnalysis = await analyzePromptForMetis(prompt, goal);
+          if (promptAnalysis) {
+            console.log('AI analysis successful');
+          } else {
+            console.log('AI analysis returned null, will use fallback analysis');
+          }
+        } catch (analysisError) {
+          console.error('Error getting AI analysis:', analysisError);
         }
-      } catch (analysisError) {
-        console.error('Error getting AI analysis:', analysisError);
       }
       
     } catch (error) {
@@ -604,6 +606,13 @@ app.post('/api/evaluate', async (req, res) => {
     }
     
     console.log('Final AI response:', aiResponse.substring(0, 100) + '...');
+    
+    // If skipAnalysis is true, just return the AI response
+    if (skipAnalysis) {
+      return res.json({
+        aiResponse
+      });
+    }
     
     // Calculate match percentage
     const matchPercentage = calculateSimilarity(aiResponse, goal);

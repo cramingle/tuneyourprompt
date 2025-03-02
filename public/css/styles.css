@@ -778,6 +778,55 @@ footer a:hover {
     background-color: #3367D6;
 }
 
+/* Final Result Section */
+.final-result {
+    background-color: #f0f7ff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 15px;
+    border-left: 3px solid #4CAF50;
+}
+
+.final-result.hidden {
+    display: none;
+}
+
+.final-result-header {
+    font-size: 12px;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+}
+
+.final-result-header i:first-child {
+    color: #4CAF50;
+}
+
+.close-final-result {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.close-final-result:hover {
+    color: #555;
+}
+
+.final-result-text {
+    font-size: 13px;
+    color: #333;
+    line-height: 1.5;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-line;
+}
+
 /* Responsive adjustments for analysis panel */
 @media (max-width: 768px) {
     .analysis-panel {

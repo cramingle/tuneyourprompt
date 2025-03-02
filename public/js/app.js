@@ -500,19 +500,86 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Add event listener for the close button in the Final Result section
+    const closeFinalResultBtn = document.getElementById('close-final-result');
+    if (closeFinalResultBtn) {
+        closeFinalResultBtn.addEventListener('click', function() {
+            document.getElementById('final-result-section').classList.add('hidden');
+        });
+    }
+    
     // Add event listener for "Use This Prompt" button
     const useImprovedPromptBtn = document.getElementById('use-improved-prompt');
     if (useImprovedPromptBtn) {
-        useImprovedPromptBtn.addEventListener('click', function() {
+        useImprovedPromptBtn.addEventListener('click', async function() {
             const improvedPrompt = document.getElementById('improved-prompt-text').textContent;
+            const goalText = document.getElementById('goal-input').value.trim();
             const promptInput = document.getElementById('prompt-input');
+            
+            // Update the prompt input with the improved prompt
             promptInput.value = improvedPrompt;
             
-            // Hide the analysis panel
-            document.getElementById('analysis-panel').classList.add('hidden');
+            // Show loading overlay
+            loadingOverlay.style.display = 'flex';
+            const loadingText = document.querySelector('.loading-overlay p');
+            loadingText.textContent = 'GENERATING FINAL RESULT...';
             
-            // Focus on the prompt input
-            promptInput.focus();
+            try {
+                // Set a timeout for the request
+                const controller = new AbortController();
+                const timeoutDuration = 30000; // 30 seconds
+                const timeoutId = setTimeout(() => {
+                    console.log(`API request timed out after ${timeoutDuration/1000} seconds`);
+                    controller.abort();
+                }, timeoutDuration);
+                
+                // Call the API with the improved prompt but skip analysis
+                const response = await fetch('/api/evaluate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: improvedPrompt,
+                        goal: goalText,
+                        skipAnalysis: true // Add this flag to indicate we just want the response
+                    }),
+                    signal: controller.signal
+                });
+                
+                // Clear the timeout
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`API responded with status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Hide loading overlay
+                loadingOverlay.style.display = 'none';
+                
+                // Show the final result section
+                const finalResultSection = document.getElementById('final-result-section');
+                const finalResultText = document.getElementById('final-result-text');
+                
+                finalResultText.textContent = data.aiResponse;
+                finalResultSection.classList.remove('hidden');
+                
+                // Add the AI response to the chat as well
+                addMessage('ai', data.aiResponse, '', true);
+                
+                // Keep the analysis panel open to show both the improved prompt and final result
+                
+            } catch (error) {
+                console.error('Error getting final result:', error);
+                
+                // Hide loading overlay
+                loadingOverlay.style.display = 'none';
+                
+                // Show error message
+                addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> Error getting final result: ${error.message}. Please try again.`);
+            }
         });
     }
 }); 
