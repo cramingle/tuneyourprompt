@@ -50,6 +50,63 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Add typing animation with formatted paragraphs
+    function typeTextFormatted(container, text, speed = 30) {
+        // Clear the container
+        container.innerHTML = '';
+        
+        // Format the text into paragraphs
+        const formattedContent = formatAIResponse(text);
+        container.innerHTML = formattedContent;
+        
+        // Get all text nodes in the container
+        const textNodes = [];
+        const walker = document.createTreeWalker(
+            container,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+            textNodes.push(node);
+        }
+        
+        // Hide all text initially
+        textNodes.forEach(node => {
+            node.originalText = node.nodeValue;
+            node.nodeValue = '';
+        });
+        
+        return new Promise(resolve => {
+            let currentNodeIndex = 0;
+            let currentCharIndex = 0;
+            
+            function typeNextChar() {
+                if (currentNodeIndex >= textNodes.length) {
+                    resolve();
+                    return;
+                }
+                
+                const currentNode = textNodes[currentNodeIndex];
+                const originalText = currentNode.originalText;
+                
+                if (currentCharIndex < originalText.length) {
+                    currentNode.nodeValue = originalText.substring(0, currentCharIndex + 1);
+                    currentCharIndex++;
+                    setTimeout(typeNextChar, speed);
+                } else {
+                    currentNodeIndex++;
+                    currentCharIndex = 0;
+                    setTimeout(typeNextChar, speed * 2); // Slight pause between nodes
+                }
+            }
+            
+            typeNextChar();
+        });
+    }
+    
     // Helper function to add a message to the chat
     function addMessage(type, content, extraClasses = '', animate = false) {
         const messageDiv = document.createElement('div');
@@ -60,16 +117,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (typeof content === 'string') {
             if (animate && type === 'ai') {
-                const paragraph = document.createElement('p');
-                contentDiv.appendChild(paragraph);
+                // For animated AI responses, use the formatted typing animation
                 messageDiv.appendChild(contentDiv);
                 chatMessages.appendChild(messageDiv);
                 
                 // Scroll to the bottom
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 
-                // Start typing animation
-                typeText(paragraph, content, 15);
+                // Start typing animation with formatting
+                typeTextFormatted(contentDiv, content, 15);
+            } else if (type === 'ai') {
+                // Format AI responses with proper paragraphs
+                const formattedContent = formatAIResponse(content);
+                contentDiv.innerHTML = formattedContent;
+                messageDiv.appendChild(contentDiv);
+                chatMessages.appendChild(messageDiv);
             } else {
                 contentDiv.innerHTML = `<p>${content}</p>`;
                 messageDiv.appendChild(contentDiv);
@@ -85,6 +147,64 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.scrollTop = chatMessages.scrollHeight;
         
         return messageDiv;
+    }
+    
+    // Helper function to format AI responses with proper paragraphs
+    function formatAIResponse(text) {
+        if (!text) return '<p>No response</p>';
+        
+        // Replace code blocks
+        text = text.replace(/```([a-z]*)\n([\s\S]*?)\n```/g, function(match, language, code) {
+            return `<pre><code class="language-${language}">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
+        });
+        
+        // Replace inline code
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // Split by double newlines or numbered/bullet list items
+        let paragraphs = text.split(/\n\s*\n|\n(?=\d+\.|\*\s|•\s|-\s)/);
+        
+        // Handle single newlines within paragraphs
+        paragraphs = paragraphs.map(p => p.replace(/\n(?!\d+\.|\*\s|•\s|-\s)/g, '<br>'));
+        
+        // Process paragraphs
+        paragraphs = paragraphs.map(p => {
+            // Skip pre-formatted code blocks
+            if (p.includes('<pre>')) return p;
+            
+            // Check if this paragraph contains a numbered list
+            if (/^\d+\.\s/.test(p)) {
+                // Split by newline followed by a number and period
+                const listItems = p.split(/\n(?=\d+\.\s)/);
+                
+                // If we have multiple list items, format as a list
+                if (listItems.length > 1) {
+                    return `<ol>${listItems.map(item => `<li>${item.replace(/^\d+\.\s/, '')}</li>`).join('')}</ol>`;
+                }
+            }
+            
+            // Check if this paragraph contains a bullet list
+            if (/^(\*\s|•\s|-\s)/.test(p)) {
+                // Split by newline followed by a bullet
+                const listItems = p.split(/\n(?=\*\s|•\s|-\s)/);
+                
+                // If we have multiple list items, format as a list
+                if (listItems.length > 1) {
+                    return `<ul>${listItems.map(item => `<li>${item.replace(/^(\*\s|•\s|-\s)/, '')}</li>`).join('')}</ul>`;
+                }
+            }
+            
+            // Check for headings (# Heading)
+            if (/^#{1,6}\s/.test(p)) {
+                const level = p.match(/^(#{1,6})\s/)[1].length;
+                const content = p.replace(/^#{1,6}\s/, '');
+                return `<h${level}>${content}</h${level}>`;
+            }
+            
+            return `<p>${p}</p>`;
+        });
+        
+        return paragraphs.join('');
     }
     
     // Update progress bar and indicators

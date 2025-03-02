@@ -235,10 +235,11 @@ main {
 
 .message.ai {
     align-self: flex-start;
-    background-color: var(--ai-message-bg);
-    border: 1px solid var(--border-color);
+    background-color: transparent;
     color: var(--text-color);
     border-bottom-left-radius: 2px;
+    max-width: 95%;
+    padding: 10px 0;
 }
 
 .message-content {
@@ -246,11 +247,76 @@ main {
 }
 
 .message-content p {
-    margin-bottom: 6px;
+    margin-bottom: 12px;
+    line-height: 1.5;
 }
 
-.message-content p:last-child {
+.message.ai .message-content p {
+    margin-bottom: 16px;
+}
+
+.message.ai .message-content p:last-child {
     margin-bottom: 0;
+}
+
+.message.ai .message-content ol,
+.message.ai .message-content ul {
+    margin-bottom: 16px;
+    padding-left: 24px;
+}
+
+.message.ai .message-content li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.message.ai .message-content h1,
+.message.ai .message-content h2,
+.message.ai .message-content h3,
+.message.ai .message-content h4 {
+    margin-top: 20px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.message.ai .message-content h1 {
+    font-size: 1.4rem;
+}
+
+.message.ai .message-content h2 {
+    font-size: 1.2rem;
+}
+
+.message.ai .message-content h3 {
+    font-size: 1.1rem;
+}
+
+.message.ai .message-content h4 {
+    font-size: 1rem;
+}
+
+.message.ai .message-content code {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+}
+
+.message.ai .message-content pre {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 12px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+}
+
+.message.ai .message-content pre code {
+    background-color: transparent;
+    padding: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    line-height: 1.5;
 }
 
 /* Feedback styles */
