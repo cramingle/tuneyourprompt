@@ -1,7 +1,7 @@
 // utils.js - Utility functions for the application
 
 // Loading tips to display during API calls
-export const LOADING_TIPS = [
+const LOADING_TIPS = [
     "Great prompts are specific, clear, and provide context.",
     "Try including examples in your prompts for better results.",
     "Consider the tone and style you want in the AI's response.",
@@ -13,7 +13,7 @@ export const LOADING_TIPS = [
 ];
 
 // Loading messages for different operations
-export const LOADING_MESSAGES = {
+const LOADING_MESSAGES = {
     default: "Processing Request",
     health: "Connecting to AI",
     generate: "Crafting Response",
@@ -26,7 +26,7 @@ export const LOADING_MESSAGES = {
  * @param {string} type - The type of loading message
  * @param {string} customMessage - Optional custom message to display
  */
-export function updateLoadingMessage(type = 'default', customMessage = null) {
+function updateLoadingMessage(type = 'default', customMessage = null) {
     const loadingElement = document.getElementById('loading-message');
     if (!loadingElement) return;
     
@@ -51,7 +51,7 @@ export function updateLoadingMessage(type = 'default', customMessage = null) {
  * @param {number} speed - The typing speed in milliseconds
  * @returns {Promise} - Resolves when typing is complete
  */
-export function typeText(element, text, speed = 30) {
+function typeText(element, text, speed = 30) {
     let i = 0;
     element.textContent = '';
     
@@ -76,7 +76,7 @@ export function typeText(element, text, speed = 30) {
  * @param {number} speed - The typing speed in milliseconds
  * @returns {Promise} - Resolves when typing is complete
  */
-export function typeTextFormatted(container, text, speed = 30) {
+function typeTextFormatted(container, text, speed = 30) {
     // Clear the container
     container.innerHTML = '';
     
@@ -137,7 +137,7 @@ export function typeTextFormatted(container, text, speed = 30) {
  * @param {string} text - The text to format
  * @returns {string} - The formatted HTML
  */
-export function formatAIResponse(text) {
+function formatAIResponse(text) {
     if (!text) return '<p>No response</p>';
     
     // Replace code blocks
@@ -192,4 +192,31 @@ export function formatAIResponse(text) {
     });
     
     return paragraphs.join('');
-} 
+}
+
+// Handle both CommonJS and ES Module environments
+try {
+    // Check if we're in a CommonJS environment
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = {
+            LOADING_TIPS,
+            LOADING_MESSAGES,
+            updateLoadingMessage,
+            typeText,
+            typeTextFormatted,
+            formatAIResponse
+        };
+    }
+} catch (e) {
+    // Ignore errors, we're probably in an ES module environment
+}
+
+// Export for ES modules
+export {
+    LOADING_TIPS,
+    LOADING_MESSAGES,
+    updateLoadingMessage,
+    typeText,
+    typeTextFormatted,
+    formatAIResponse
+}; 
