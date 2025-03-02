@@ -454,7 +454,7 @@ textarea {
     background-color: var(--input-bg);
     color: var(--text-color);
     font-family: 'Inter', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.85rem !important;
     resize: none;
     outline: none;
     box-shadow: none;
@@ -536,7 +536,7 @@ textarea::placeholder {
     .chat-input-area textarea {
         min-height: 120px;
         padding: 30px !important;
-        font-size: 0.85rem;
+        font-size: 0.85rem !important;
         border-radius: 24px;
     }
     
@@ -922,7 +922,7 @@ footer a:hover {
     .chat-input-area textarea {
         min-height: 120px;
         padding: 30px !important;
-        font-size: 0.85rem;
+        font-size: 0.85rem !important;
         border-radius: 24px;
     }
     
@@ -1363,7 +1363,7 @@ footer a:hover {
     border-radius: 24px;
     background-color: var(--input-bg);
     border: none;
-    font-size: 0.85rem;
+    font-size: 0.85rem !important;
     padding: 30px !important;
     line-height: 1.6;
 }
@@ -1387,7 +1387,7 @@ footer a:hover {
     .chat-input-area textarea {
         min-height: 120px;
         padding: 30px !important;
-        font-size: 0.85rem;
+        font-size: 0.85rem !important;
         border-radius: 24px;
     }
     
