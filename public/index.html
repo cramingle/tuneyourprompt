@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TuneYourPrompt - Learn AI Prompting</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <meta name="description" content="Learn how to craft effective AI prompts with TuneYourPrompt">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#7C4DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="#7C4DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="#00E5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h1>TUNE<span class="highlight">PROMPT</span></h1>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-steps">
+                    <div class="step active" id="step-indicator-1"><i class="fas fa-bullseye fa-xs"></i> DEFINE</div>
+                    <div class="step" id="step-indicator-2"><i class="fas fa-pen-fancy fa-xs"></i> WRITE</div>
+                    <div class="step" id="step-indicator-3"><i class="fas fa-chart-line fa-xs"></i> ANALYZE</div>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Initial welcome message -->
+                    <div class="message system">
+                        <div class="message-content">
+                            <p><i class="fas fa-robot fa-xs"></i> Welcome to TunePrompt! I'll help you craft better AI prompts. Let's start by defining what you want the AI to create.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-area" id="goal-input-area">
+                    <div class="input-label"><i class="fas fa-bullseye fa-xs"></i> WHAT DO YOU WANT THE AI TO CREATE?</div>
+                    <div class="input-container">
+                        <textarea id="goal-input" placeholder="Example: A funny story about a pirate"></textarea>
+                        <button class="send-button" id="goal-next">
+                            <i class="fas fa-paper-plane fa-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="input-area hidden" id="prompt-input-area">
+                    <div class="input-label"><i class="fas fa-pen-fancy fa-xs"></i> WRITE YOUR PROMPT</div>
+                    <div class="input-container">
+                        <textarea id="prompt-input" placeholder="Example: Write a story"></textarea>
+                        <button class="send-button" id="prompt-next">
+                            <i class="fas fa-paper-plane fa-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="input-area hidden" id="try-again-area">
+                    <div class="button-row">
+                        <button class="try-again-button" id="try-again"><i class="fas fa-redo fa-xs"></i> TRY AGAIN</button>
+                        <button class="start-over-button" id="start-over"><i class="fas fa-sync fa-xs"></i> START OVER</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="spinner"></div>
+            <p>ANALYZING PROMPT...</p>
+        </div>
+
+        <footer>
+            <p>POWERED BY OLLAMA METIS | <a href="https://github.com/ollama/ollama" target="_blank">LEARN MORE</a></p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html> 
