@@ -67,7 +67,9 @@
                 <div class="progress-steps">
                     <div class="step active" id="step-indicator-1"><i class="fas fa-bullseye fa-xs"></i> DEFINE</div>
                     <div class="step" id="step-indicator-2"><i class="fas fa-pen-fancy fa-xs"></i> WRITE</div>
-                    <div class="step" id="step-indicator-3"><i class="fas fa-chart-line fa-xs"></i> ANALYZE</div>
+                    <div class="step" id="step-indicator-3"><i class="fas fa-comment fa-xs"></i> RESULT</div>
+                    <div class="step" id="step-indicator-4"><i class="fas fa-chart-line fa-xs"></i> ANALYZE</div>
+                    <div class="step" id="step-indicator-5"><i class="fas fa-check-circle fa-xs"></i> FINAL</div>
                 </div>
             </div>
         </header>
@@ -163,14 +165,14 @@
                 <div class="improved-prompt-text" id="improved-prompt-text">-</div>
                 <button class="use-improved-prompt" id="use-improved-prompt">USE THIS PROMPT</button>
             </div>
-            
-            <div class="final-result hidden" id="final-result-section">
-                <div class="final-result-header">
-                    <i class="fas fa-check-circle fa-xs"></i> FINAL RESULT
-                    <button class="close-final-result" id="close-final-result"><i class="fas fa-times fa-xs"></i></button>
-                </div>
-                <div class="final-result-text" id="final-result-text">-</div>
+        </div>
+
+        <div class="final-result-panel hidden" id="final-result-panel">
+            <div class="final-result-header">
+                <div class="final-result-title">FINAL RESULT</div>
+                <button class="close-final-result" id="close-final-result"><i class="fas fa-times fa-xs"></i></button>
             </div>
+            <div class="final-result-text" id="final-result-text">-</div>
         </div>
 
         <div class="loading-overlay" id="loading-overlay">

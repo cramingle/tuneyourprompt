@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const stepIndicator1 = document.getElementById('step-indicator-1');
     const stepIndicator2 = document.getElementById('step-indicator-2');
     const stepIndicator3 = document.getElementById('step-indicator-3');
+    const stepIndicator4 = document.getElementById('step-indicator-4');
+    const stepIndicator5 = document.getElementById('step-indicator-5');
     
     const chatMessages = document.getElementById('chat-messages');
     
@@ -20,7 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverBtn = document.getElementById('start-over');
     
     const loadingOverlay = document.getElementById('loading-overlay');
-    const loadingMessage = document.getElementById('loading-message');
+    const loadingMessage = document.querySelector('.loading-overlay p');
+    
+    const analysisPanel = document.getElementById('analysis-panel');
+    const finalResultPanel = document.getElementById('final-result-panel');
     
     // Current step tracking
     let currentStep = 1;
@@ -87,18 +92,26 @@ document.addEventListener('DOMContentLoaded', () => {
         currentStep = step;
         
         // Update progress bar with animation
-        progressFill.style.width = `${(step / 3) * 100}%`;
+        progressFill.style.width = `${(step / 5) * 100}%`;
         
         // Update step indicators
         stepIndicator1.className = step >= 1 ? 'step active' : 'step';
         stepIndicator2.className = step >= 2 ? 'step active' : 'step';
         stepIndicator3.className = step >= 3 ? 'step active' : 'step';
+        stepIndicator4.className = step >= 4 ? 'step active' : 'step';
+        stepIndicator5.className = step >= 5 ? 'step active' : 'step';
         
         if (step > 1) {
             stepIndicator1.className = 'step completed';
         }
         if (step > 2) {
             stepIndicator2.className = 'step completed';
+        }
+        if (step > 3) {
+            stepIndicator3.className = 'step completed';
+        }
+        if (step > 4) {
+            stepIndicator4.className = 'step completed';
         }
         
         // Show/hide input areas with smooth transitions
@@ -114,6 +127,14 @@ document.addEventListener('DOMContentLoaded', () => {
             goalInputArea.className = 'input-area hidden';
             promptInputArea.className = 'input-area hidden';
             tryAgainArea.className = 'input-area';
+        } else if (step === 4) {
+            goalInputArea.className = 'input-area hidden';
+            promptInputArea.className = 'input-area hidden';
+            tryAgainArea.className = 'input-area hidden';
+        } else if (step === 5) {
+            goalInputArea.className = 'input-area hidden';
+            promptInputArea.className = 'input-area hidden';
+            tryAgainArea.className = 'input-area hidden';
         }
     }
     
@@ -153,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Show loading overlay
         loadingOverlay.style.display = 'flex';
+        loadingMessage.textContent = 'GENERATING RESULT...';
         
         // Track retries
         let retries = 0;
@@ -161,9 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
         async function attemptEvaluation() {
             try {
                 // Update loading message
-                const loadingText = document.querySelector('.loading-overlay p');
                 if (retries > 0) {
-                    loadingText.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
+                    loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
                 }
                 
                 // Create an AbortController for timeout
@@ -199,13 +220,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Add AI response message with typing animation
                 addMessage('ai', data.aiResponse, '', true);
                 
-                // Add feedback message after a short delay
+                // Move to step 3 (Result)
+                updateProgress(3);
+                
+                // Add analyze button to the chat
                 setTimeout(() => {
-                    // Update analysis panel instead of creating feedback element
-                    updateAnalysisPanel(data.analysis);
+                    const analyzeBtn = document.createElement('button');
+                    analyzeBtn.className = 'analyze-button';
+                    analyzeBtn.innerHTML = '<i class="fas fa-chart-line fa-xs"></i> ANALYZE THIS PROMPT';
+                    analyzeBtn.addEventListener('click', () => {
+                        // Update analysis panel with the data
+                        updateAnalysisPanel(data.analysis);
+                        
+                        // Show analysis panel
+                        analysisPanel.classList.remove('hidden');
+                        
+                        // Move to step 4 (Analyze)
+                        updateProgress(4);
+                    });
                     
-                    // Move to step 3
-                    updateProgress(3);
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.className = 'button-container';
+                    buttonContainer.appendChild(analyzeBtn);
+                    
+                    addMessage('system', buttonContainer);
                 }, 1000);
                 
             } catch (error) {
@@ -220,8 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log(`Retry attempt ${retries}/${maxRetries} after timeout`);
                         
                         // Update loading message
-                        const loadingText = document.querySelector('.loading-overlay p');
-                        loadingText.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
+                        loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
                         
                         // Wait a moment before retrying
                         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -242,8 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log(`Retry attempt ${retries}/${maxRetries}`);
                     
                     // Update loading message
-                    const loadingText = document.querySelector('.loading-overlay p');
-                    loadingText.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
+                    loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
                     
                     // Wait a moment before retrying
                     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -273,6 +309,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add system message
         addMessage('system', '<i class="fas fa-redo fa-xs"></i> Let\'s try another prompt for the same goal.');
         
+        // Hide panels if they're open
+        analysisPanel.classList.add('hidden');
+        finalResultPanel.classList.add('hidden');
+        
         // Move back to step 2
         updateProgress(2);
         
@@ -286,6 +326,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clear inputs
             goalInput.value = '';
             promptInput.value = '';
+            
+            // Hide panels if they're open
+            analysisPanel.classList.add('hidden');
+            finalResultPanel.classList.add('hidden');
             
             // Clear chat messages except the first welcome message
             while (chatMessages.children.length > 1) {
@@ -496,7 +540,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeAnalysisBtn = document.getElementById('close-analysis');
     if (closeAnalysisBtn) {
         closeAnalysisBtn.addEventListener('click', function() {
-            document.getElementById('analysis-panel').classList.add('hidden');
+            analysisPanel.classList.add('hidden');
+            
+            // If we're on step 4 (Analyze), go back to step 3 (Result)
+            if (currentStep === 4) {
+                updateProgress(3);
+            }
         });
     }
     
@@ -504,7 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeFinalResultBtn = document.getElementById('close-final-result');
     if (closeFinalResultBtn) {
         closeFinalResultBtn.addEventListener('click', function() {
-            document.getElementById('final-result-section').classList.add('hidden');
+            finalResultPanel.classList.add('hidden');
         });
     }
     
@@ -521,8 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Show loading overlay
             loadingOverlay.style.display = 'flex';
-            const loadingText = document.querySelector('.loading-overlay p');
-            loadingText.textContent = 'GENERATING FINAL RESULT...';
+            loadingMessage.textContent = 'GENERATING FINAL RESULT...';
             
             try {
                 // Set a timeout for the request
@@ -559,17 +607,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Hide loading overlay
                 loadingOverlay.style.display = 'none';
                 
-                // Show the final result section
-                const finalResultSection = document.getElementById('final-result-section');
+                // Show the final result panel
                 const finalResultText = document.getElementById('final-result-text');
-                
                 finalResultText.textContent = data.aiResponse;
-                finalResultSection.classList.remove('hidden');
+                finalResultPanel.classList.remove('hidden');
                 
                 // Add the AI response to the chat as well
                 addMessage('ai', data.aiResponse, '', true);
                 
-                // Keep the analysis panel open to show both the improved prompt and final result
+                // Close the analysis panel
+                analysisPanel.classList.add('hidden');
+                
+                // Move to step 5 (Final Result)
+                updateProgress(5);
                 
             } catch (error) {
                 console.error('Error getting final result:', error);
