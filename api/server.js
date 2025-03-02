@@ -568,6 +568,87 @@ app.post('/api/evaluate', async (req, res) => {
   }
 });
 
+// API endpoint to generate responses with a specific prompt
+app.post('/api/generate', async (req, res) => {
+  try {
+    const { prompt, goal } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+    
+    // Set a timeout based on environment - shorter for Vercel
+    const controller = new AbortController();
+    const timeoutDuration = IS_VERCEL ? 10000 : 30000; // 10 seconds for Vercel, 30 seconds for local
+    const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+    
+    const apiResponse = await fetch(`${OLLAMA_API_URL}/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'mistral',
+        prompt: prompt,
+        stream: false
+      }),
+      signal: controller.signal
+    });
+    
+    // Clear the timeout
+    clearTimeout(timeoutId);
+    
+    if (!apiResponse.ok) {
+      throw new Error(`API responded with status: ${apiResponse.status}`);
+    }
+    
+    const data = await apiResponse.json();
+    let response = '';
+    
+    // Extract the content based on the response type
+    if (data.type === 'text' && data.content) {
+      console.log('Using text content');
+      response = data.content;
+    } else if (data.type === 'email_template') {
+      if (data.content && data.content.message && data.content.message.trim()) {
+        console.log('Using message from email template');
+        response = data.content.message;
+      } else if (data.content && data.content.html) {
+        console.log('Extracting text from HTML');
+        // Extract text from HTML
+        const htmlContent = data.content.html;
+        // Extract text from between <p> tags
+        const paragraphs = htmlContent.match(/<p>(.*?)<\/p>/g);
+        if (paragraphs && paragraphs.length > 0) {
+          // Remove HTML tags and join paragraphs with newlines
+          response = paragraphs
+            .map(p => p.replace(/<\/?p>/g, ''))
+            .join('\n');
+        } else {
+          // Fallback: strip all HTML tags
+          response = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+      } else {
+        console.log('No content found in email template response');
+        throw new Error('No content found in email template response');
+      }
+    } else if (data.content && data.content.message) {
+      response = data.content.message;
+    } else if (data.response) {
+      response = data.response;
+    } else {
+      throw new Error('Unexpected API response format');
+    }
+    
+    // Return the response
+    res.json({ response });
+    
+  } catch (error) {
+    console.error('Error generating response:', error);
+    res.status(500).json({ error: 'Failed to generate response', details: error.message });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   console.log('Health check requested');

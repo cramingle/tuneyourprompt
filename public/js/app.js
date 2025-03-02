@@ -472,6 +472,42 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
+                // Create Continue Chat button
+                const continueChatBtn = document.createElement('button');
+                continueChatBtn.className = 'continue-chat-button';
+                continueChatBtn.innerHTML = '<i class="fas fa-comment"></i>';
+                continueChatBtn.title = 'Continue Chat';
+                continueChatBtn.addEventListener('click', () => {
+                    // Create a chat input area
+                    const chatInputArea = document.createElement('div');
+                    chatInputArea.className = 'chat-input-area';
+                    chatInputArea.innerHTML = `
+                        <textarea id="continue-chat-input" placeholder="Type your follow-up message..."></textarea>
+                        <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+                    `;
+                    
+                    // Replace the button row with the chat input area
+                    tryAgainArea.innerHTML = '';
+                    tryAgainArea.appendChild(chatInputArea);
+                    
+                    // Focus on the chat input
+                    document.getElementById('continue-chat-input').focus();
+                    
+                    // Add event listener for the send button
+                    document.getElementById('send-chat-btn').addEventListener('click', sendContinueChatMessage);
+                    
+                    // Add event listener for Enter key
+                    document.getElementById('continue-chat-input').addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            sendContinueChatMessage();
+                        }
+                    });
+                    
+                    // Add a system message
+                    addMessage('system', '<i class="fas fa-comment fa-xs"></i> Continue your conversation with the AI...');
+                });
+                
                 // Create a left side container for try again and start over buttons
                 const leftButtonsContainer = document.createElement('div');
                 leftButtonsContainer.className = 'left-buttons';
@@ -481,10 +517,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Add the left buttons container to the button row
                 buttonRow.appendChild(leftButtonsContainer);
                 
-                // Create a right side container for the analyze button
+                // Create a right side container for the analyze button and continue chat button
                 const rightButtonsContainer = document.createElement('div');
                 rightButtonsContainer.className = 'right-buttons';
                 rightButtonsContainer.appendChild(analyzeBtn);
+                rightButtonsContainer.appendChild(continueChatBtn);
                 
                 // Add the right buttons container to the button row
                 buttonRow.appendChild(rightButtonsContainer);
@@ -844,6 +881,42 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        // Create Continue Chat button
+        const continueChatBtn = document.createElement('button');
+        continueChatBtn.className = 'continue-chat-button';
+        continueChatBtn.innerHTML = '<i class="fas fa-comment"></i>';
+        continueChatBtn.title = 'Continue Chat';
+        continueChatBtn.addEventListener('click', () => {
+            // Create a chat input area
+            const chatInputArea = document.createElement('div');
+            chatInputArea.className = 'chat-input-area';
+            chatInputArea.innerHTML = `
+                <textarea id="continue-chat-input" placeholder="Type your follow-up message..."></textarea>
+                <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+            `;
+            
+            // Replace the button row with the chat input area
+            tryAgainArea.innerHTML = '';
+            tryAgainArea.appendChild(chatInputArea);
+            
+            // Focus on the chat input
+            document.getElementById('continue-chat-input').focus();
+            
+            // Add event listener for the send button
+            document.getElementById('send-chat-btn').addEventListener('click', sendContinueChatMessage);
+            
+            // Add event listener for Enter key
+            document.getElementById('continue-chat-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendContinueChatMessage();
+                }
+            });
+            
+            // Add a system message
+            addMessage('system', '<i class="fas fa-comment fa-xs"></i> Continue your conversation with the AI...');
+        });
+        
         // Create a left side container for try again and start over buttons
         const leftButtonsContainer = document.createElement('div');
         leftButtonsContainer.className = 'left-buttons';
@@ -853,10 +926,315 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add the left buttons container to the button row
         buttonRow.appendChild(leftButtonsContainer);
         
-        // We don't need the right buttons container here since we're in the final step
+        // Create a right side container for the continue chat button
+        const rightButtonsContainer = document.createElement('div');
+        rightButtonsContainer.className = 'right-buttons';
+        rightButtonsContainer.appendChild(continueChatBtn);
+        
+        // Add the right buttons container to the button row
+        buttonRow.appendChild(rightButtonsContainer);
+        
+        // Add the button row to the try-again-area
         tryAgainArea.appendChild(buttonRow);
     }
     
+    // Function to send a continue chat message
+    function sendContinueChatMessage() {
+        const chatInput = document.getElementById('continue-chat-input');
+        const message = chatInput.value.trim();
+        
+        if (!message) return;
+        
+        // Add user message to chat
+        addMessage('user', message);
+        
+        // Clear input
+        chatInput.value = '';
+        
+        // Show loading overlay
+        loadingOverlay.style.display = 'flex';
+        loadingMessage.textContent = 'AI IS THINKING...';
+        
+        // Get the goal and previous context
+        const goalText = goalInput.value.trim();
+        
+        // Create a context from the previous messages
+        const chatHistory = Array.from(chatMessages.querySelectorAll('.message'))
+            .map(msg => {
+                const isAi = msg.classList.contains('ai');
+                const isUser = msg.classList.contains('user');
+                const content = msg.querySelector('.message-content').textContent.trim();
+                
+                if (isAi) return `AI: ${content}`;
+                if (isUser) return `User: ${content}`;
+                return null;
+            })
+            .filter(msg => msg !== null)
+            .slice(-10) // Get last 10 messages for context
+            .join('\n');
+        
+        // Create a prompt that includes context
+        const contextPrompt = `
+The following is a conversation between a user and an AI assistant.
+The user's original goal was: "${goalText}"
+
+Previous conversation:
+${chatHistory}
+
+User's new message: ${message}
+
+Please respond to the user's new message, taking into account the context of the previous conversation and their original goal.
+`;
+        
+        // Send the request to the API
+        fetch('/api/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                prompt: contextPrompt,
+                goal: goalText
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server responded with status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading overlay
+            loadingOverlay.style.display = 'none';
+            
+            // Add the AI response to the chat
+            addMessage('ai', data.response, '', true);
+            
+            // Restore the continue chat input area
+            const tryAgainArea = document.getElementById('try-again-area');
+            const chatInputArea = document.createElement('div');
+            chatInputArea.className = 'chat-input-area';
+            chatInputArea.innerHTML = `
+                <textarea id="continue-chat-input" placeholder="Type your follow-up message..."></textarea>
+                <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+            `;
+            
+            tryAgainArea.innerHTML = '';
+            tryAgainArea.appendChild(chatInputArea);
+            
+            // Focus on the chat input
+            document.getElementById('continue-chat-input').focus();
+            
+            // Add event listener for the send button
+            document.getElementById('send-chat-btn').addEventListener('click', sendContinueChatMessage);
+            
+            // Add event listener for Enter key
+            document.getElementById('continue-chat-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendContinueChatMessage();
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error in continue chat:', error);
+            
+            // Hide loading overlay
+            loadingOverlay.style.display = 'none';
+            
+            // Show error message
+            addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> Error: ${error.message}`);
+            
+            // Restore the buttons
+            addFinalStepButtons();
+        });
+    }
+
+    // Add CSS for the chat separator
+    const style = document.createElement('style');
+    style.textContent = `
+    .chat-separator {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .chat-separator::before,
+    .chat-separator::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .chat-separator span {
+        padding: 0 10px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--light-text);
+        font-weight: 600;
+        background-color: var(--background-color);
+    }
+    
+    /* Continue Chat Button Styles */
+    .continue-chat-button {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        font-size: 0.8rem;
+    }
+    
+    .continue-chat-button:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Chat Input Area Styles */
+    .chat-input-area {
+        display: flex;
+        margin-top: 10px;
+        background-color: var(--input-bg);
+        border-radius: 8px;
+        padding: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    #continue-chat-input {
+        flex: 1;
+        border: none;
+        background-color: transparent;
+        color: var(--text-color);
+        font-family: inherit;
+        font-size: 1rem;
+        padding: 8px;
+        min-height: 40px;
+        resize: vertical;
+        outline: none;
+    }
+    
+    #send-chat-btn {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-left: 8px;
+        align-self: flex-end;
+        font-size: 0.8rem;
+    }
+    
+    #send-chat-btn:hover {
+        background-color: var(--accent-hover);
+    }
+    
+    /* Make all buttons in input area smaller */
+    .try-again-button, .start-over-button, .analyze-button {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+    
+    /* Adjust button spacing */
+    .button-row {
+        gap: 8px;
+    }
+    
+    .left-buttons, .right-buttons {
+        gap: 8px;
+    }
+    
+    /* Make analysis panel more proportional */
+    #analysis-panel {
+        max-width: 90%;
+        max-height: 80vh;
+        width: auto;
+        padding: 15px;
+        font-size: 0.9rem;
+    }
+    
+    #analysis-panel h2 {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+    
+    #analysis-panel .tab-buttons {
+        margin-bottom: 10px;
+    }
+    
+    #analysis-panel .tab-button {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+    
+    #analysis-panel .metric-bar {
+        height: 8px;
+        margin: 5px 0;
+    }
+    
+    #analysis-panel .metric-info {
+        margin-bottom: 10px;
+    }
+    
+    #analysis-panel .metric-feedback {
+        font-size: 0.85rem;
+        margin-top: 5px;
+    }
+    
+    #analysis-panel .improved-prompt-section {
+        margin-top: 10px;
+    }
+    
+    #analysis-panel #improved-prompt-text {
+        font-size: 0.9rem;
+        padding: 8px;
+    }
+    
+    #analysis-panel #use-improved-prompt {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+        margin-top: 8px;
+    }
+    
+    #analysis-panel .close-button {
+        top: 8px;
+        right: 8px;
+        width: 24px;
+        height: 24px;
+        font-size: 0.8rem;
+    }
+    `;
+    document.head.appendChild(style);
+
+    // Function to add system messages to the chat
+    function addSystemMessage(text) {
+        const systemMessage = document.createElement('div');
+        systemMessage.className = 'message system';
+        systemMessage.innerHTML = `
+            <div class="message-content">
+                <p>${text}</p>
+            </div>
+        `;
+        chatMessages.appendChild(systemMessage);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
     // Add event listener for "Use This Prompt" button
     const useImprovedPromptBtn = document.getElementById('use-improved-prompt');
     if (useImprovedPromptBtn) {
@@ -900,57 +1278,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const errorMessage = errorData.message || errorData.error || `Server responded with status: ${response.status}`;
                     console.error('Error response data:', errorData);
                     
-                    // If we get a 404, try to use the original prompt evaluation endpoint as a fallback
-                    if (response.status === 404) {
-                        console.log('Trying fallback to /api/evaluate endpoint');
-                        
-                        const fallbackResponse = await fetch('/api/evaluate', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                prompt: improvedPrompt,
-                                goal: goalText
-                            })
-                        });
-                        
-                        if (fallbackResponse.ok) {
-                            const fallbackData = await fallbackResponse.json();
-                            if (fallbackData.aiResponse) {
-                                console.log('Successfully used fallback endpoint');
-                                
-                                // Hide loading overlay
-                                loadingOverlay.style.display = 'none';
-                                
-                                // Add a separator line in the chat
-                                const separator = document.createElement('div');
-                                separator.className = 'chat-separator';
-                                separator.innerHTML = '<span>Final Result</span>';
-                                chatMessages.appendChild(separator);
-                                
-                                // Add the final AI response to chat
-                                addMessage('ai', fallbackData.aiResponse);
-                                
-                                // Update progress to step 5 (Final)
-                                updateProgress(5);
-                                
-                                // Add Try Again and Start Over buttons
-                                addFinalStepButtons();
-                                
-                                return;
-                            }
-                        }
-                    }
-                    
-                    throw new Error(errorMessage);
+                    // Show error message
+                    loadingOverlay.style.display = 'none';
+                    addMessage('system', `<i class="fas fa-exclamation-triangle"></i> Error: ${errorMessage}`);
+                    return;
                 }
                 
                 const data = await response.json();
                 
-                if (!data.response) {
-                    throw new Error('No response received from the AI');
-                }
+                // Hide loading overlay
+                loadingOverlay.style.display = 'none';
                 
                 // Add a separator line in the chat
                 const separator = document.createElement('div');
@@ -958,8 +1295,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 separator.innerHTML = '<span>Final Result</span>';
                 chatMessages.appendChild(separator);
                 
-                // Add the final AI response to chat
-                addMessage('ai', data.response);
+                // Add the AI response to the chat
+                addMessage('ai', formatAIResponse(data.response), '', true);
                 
                 // Update progress to step 5 (Final)
                 updateProgress(5);
@@ -974,47 +1311,5 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadingOverlay.style.display = 'none';
             }
         });
-    }
-
-    // Add CSS for the chat separator
-    const style = document.createElement('style');
-    style.textContent = `
-    .chat-separator {
-        display: flex;
-        align-items: center;
-        text-align: center;
-        margin: 20px 0;
-    }
-
-    .chat-separator::before,
-    .chat-separator::after {
-        content: '';
-        flex: 1;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .chat-separator span {
-        padding: 0 10px;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--light-text);
-        font-weight: 600;
-        background-color: var(--background-color);
-    }
-    `;
-    document.head.appendChild(style);
-
-    // Function to add system messages to the chat
-    function addSystemMessage(text) {
-        const systemMessage = document.createElement('div');
-        systemMessage.className = 'message system';
-        systemMessage.innerHTML = `
-            <div class="message-content">
-                <p>${text}</p>
-            </div>
-        `;
-        chatMessages.appendChild(systemMessage);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 }); 
