@@ -31,6 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentStep = 1;
     let ollamaAvailable = false;
     
+    // Helper function to create Feather icon HTML
+    function createFeatherIcon(name, size = 'sm') {
+        return `<i data-feather="${name}" class="feather-${size}"></i>`;
+    }
+    
     // Add typing animation effect
     function typeText(element, text, speed = 30) {
         let i = 0;
@@ -128,6 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return typeTextFormatted(contentDiv, content, 15).then(() => {
                     // Scroll to bottom again after animation completes
                     chatMessages.scrollTop = chatMessages.scrollHeight;
+                    // Initialize any Feather icons in the content
+                    feather.replace();
                     return messageDiv;
                 });
             } else if (type === 'ai') {
@@ -136,15 +143,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 contentDiv.innerHTML = formattedContent;
                 messageDiv.appendChild(contentDiv);
                 chatMessages.appendChild(messageDiv);
+                // Initialize any Feather icons in the content
+                feather.replace();
             } else {
                 contentDiv.innerHTML = `<p>${content}</p>`;
                 messageDiv.appendChild(contentDiv);
                 chatMessages.appendChild(messageDiv);
+                // Initialize any Feather icons in the content
+                feather.replace();
             }
         } else {
             contentDiv.appendChild(content);
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
+            // Initialize any Feather icons in the content
+            feather.replace();
         }
         
         // Scroll to the bottom
@@ -290,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage('user', goalText);
         
         // Add system response
-        addMessage('system', '<i class="fas fa-robot fa-xs"></i> Great! Now write a prompt that you think will get the AI to create what you want.');
+        addMessage('system', `${createFeatherIcon('cpu')} Great! Now write a prompt that you think will get the AI to create what you want.`);
         
         // Move to step 2
         updateProgress(2);
@@ -365,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     addMessage('ai', data.aiResponse, '', true);
                 } else {
                     console.log('No AI response received from server');
-                    addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> No response received from the AI. Please try again.', '', false);
+                    addMessage('system', `${createFeatherIcon('alert-triangle')} No response received from the AI. Please try again.`);
                     return; // Exit early if no response
                 }
                 
@@ -407,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Create analyze button
                 const analyzeBtn = document.createElement('button');
                 analyzeBtn.className = 'analyze-button';
-                analyzeBtn.innerHTML = '<i class="fas fa-chart-line"></i>';
+                analyzeBtn.innerHTML = createFeatherIcon('bar-chart-2');
                 analyzeBtn.title = 'Analyze This Prompt';
                 analyzeBtn.id = 'analyze-prompt-btn';
                 analyzeBtn.addEventListener('click', () => {
@@ -424,14 +437,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Create Try Again button
                 const tryAgainBtn = document.createElement('button');
                 tryAgainBtn.className = 'try-again-button';
-                tryAgainBtn.innerHTML = '<i class="fas fa-redo"></i>';
+                tryAgainBtn.innerHTML = createFeatherIcon('refresh-cw');
                 tryAgainBtn.title = 'Try Again';
                 tryAgainBtn.addEventListener('click', () => {
                     // Clear the prompt input
                     promptInput.value = '';
                     
                     // Add system message
-                    addMessage('system', '<i class="fas fa-redo fa-xs"></i> Let\'s try another prompt for the same goal.');
+                    addMessage('system', createFeatherIcon('refresh-cw') + ' Let\'s try another prompt for the same goal.');
                     
                     // Hide panels if they're open
                     analysisPanel.classList.add('hidden');
@@ -447,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Create Start Over button
                 const startOverBtn = document.createElement('button');
                 startOverBtn.className = 'start-over-button';
-                startOverBtn.innerHTML = '<i class="fas fa-sync"></i>';
+                startOverBtn.innerHTML = createFeatherIcon('rotate-ccw');
                 startOverBtn.title = 'Start Over';
                 startOverBtn.addEventListener('click', () => {
                     // Confirm before starting over
@@ -466,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         
                         // Add system message
-                        addMessage('system', '<i class="fas fa-sync fa-xs"></i> Let\'s start over with a new goal.');
+                        addMessage('system', createFeatherIcon('rotate-ccw') + ' Let\'s start over with a new goal.');
                         
                         // Move back to step 1
                         updateProgress(1);
@@ -479,15 +492,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Create Continue Chat button
                 const continueChatBtn = document.createElement('button');
                 continueChatBtn.className = 'continue-chat-button';
-                continueChatBtn.innerHTML = '<i class="fas fa-comment"></i>';
+                continueChatBtn.innerHTML = createFeatherIcon('message-circle');
                 continueChatBtn.title = 'Continue Chat';
                 continueChatBtn.addEventListener('click', () => {
                     // Create a chat input area
                     const chatInputArea = document.createElement('div');
-                    chatInputArea.className = 'chat-input-area';
+                    chatInputArea.className = 'input-area';
                     chatInputArea.innerHTML = `
-                        <textarea id="continue-chat-input" placeholder="Type your follow-up message..."></textarea>
-                        <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+                        <div class="input-container">
+                            <textarea id="continue-chat-input" placeholder="Continue the conversation..."></textarea>
+                            <button class="send-button" id="send-chat-btn" title="Send Message">
+                                <i data-feather="send" class="feather"></i>
+                            </button>
+                        </div>
                     `;
                     
                     // Replace the button row with the chat input area
@@ -509,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     
                     // Add a system message
-                    addMessage('system', '<i class="fas fa-comment fa-xs"></i> Continue your conversation with the AI...');
+                    addMessage('system', createFeatherIcon('message-circle') + ' Continue your conversation with the AI...');
                 });
                 
                 // Create a left side container for try again and start over buttons
@@ -556,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Hide loading overlay
                         loadingOverlay.style.display = 'none';
                         
-                        addMessage('system', `<i class="fas fa-clock fa-xs"></i> The request timed out. The server might be busy. Please try again later.`);
+                        addMessage('system', createFeatherIcon('clock') + ' The request timed out. The server might be busy. Please try again later.');
                         
                         // Move to step 3 anyway so user can try again
                         updateProgress(3);
@@ -577,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Hide loading overlay
                     loadingOverlay.style.display = 'none';
                     
-                    addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> An error occurred while evaluating your prompt: ${error.message}. Please try again later.`);
+                    addMessage('system', createFeatherIcon('alert-triangle') + ' An error occurred while evaluating your prompt: ' + error.message + '. Please try again later.');
                     
                     // Move to step 3 anyway so user can try again
                     updateProgress(3);
@@ -626,20 +643,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     ollamaAvailable = false;
                     console.log('AI API is not available:', data);
-                    addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> Note: AI API is not available. Please try again later.');
+                    addMessage('system', createFeatherIcon('alert-triangle') + ' Note: AI API is not available. Please try again later.');
                 }
             } else {
                 console.warn('Server health check failed with status:', response.status);
                 ollamaAvailable = false;
-                addMessage('system', '<i class="fas fa-exclamation-triangle fa-xs"></i> Warning: Server health check failed. Please try again later.');
+                addMessage('system', createFeatherIcon('alert-triangle') + ' Warning: Server health check failed. Please try again later.');
             }
         } catch (error) {
             console.error('Server connection error:', error);
             ollamaAvailable = false;
             if (error.name === 'AbortError') {
-                addMessage('system', '<i class="fas fa-clock fa-xs"></i> Warning: Server health check timed out. Please try again later.');
+                addMessage('system', createFeatherIcon('clock') + ' Warning: Server health check timed out. Please try again later.');
             } else {
-                addMessage('system', '<i class="fas fa-times-circle fa-xs"></i> Error: Cannot connect to the server. Please check your connection and reload the page.');
+                addMessage('system', createFeatherIcon('alert-triangle') + ' Error: Cannot connect to the server. Please check your connection and reload the page.');
             }
         }
     }
@@ -833,14 +850,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create Try Again button
         const tryAgainBtn = document.createElement('button');
         tryAgainBtn.className = 'try-again-button';
-        tryAgainBtn.innerHTML = '<i class="fas fa-redo"></i>';
+        tryAgainBtn.innerHTML = createFeatherIcon('refresh-cw');
         tryAgainBtn.title = 'Try Again';
         tryAgainBtn.addEventListener('click', () => {
             // Clear the prompt input
             promptInput.value = '';
             
             // Add system message
-            addMessage('system', '<i class="fas fa-redo fa-xs"></i> Let\'s try another prompt for the same goal.');
+            addMessage('system', createFeatherIcon('refresh-cw') + ' Let\'s try another prompt for the same goal.');
             
             // Hide panels if they're open
             analysisPanel.classList.add('hidden');
@@ -856,7 +873,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create Start Over button
         const startOverBtn = document.createElement('button');
         startOverBtn.className = 'start-over-button';
-        startOverBtn.innerHTML = '<i class="fas fa-sync"></i>';
+        startOverBtn.innerHTML = createFeatherIcon('rotate-ccw');
         startOverBtn.title = 'Start Over';
         startOverBtn.addEventListener('click', () => {
             // Confirm before starting over
@@ -875,7 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 // Add system message
-                addMessage('system', '<i class="fas fa-sync fa-xs"></i> Let\'s start over with a new goal.');
+                addMessage('system', createFeatherIcon('rotate-ccw') + ' Let\'s start over with a new goal.');
                 
                 // Move back to step 1
                 updateProgress(1);
@@ -888,15 +905,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create Continue Chat button
         const continueChatBtn = document.createElement('button');
         continueChatBtn.className = 'continue-chat-button';
-        continueChatBtn.innerHTML = '<i class="fas fa-comment"></i>';
+        continueChatBtn.innerHTML = createFeatherIcon('message-circle');
         continueChatBtn.title = 'Continue Chat';
         continueChatBtn.addEventListener('click', () => {
             // Create a chat input area
             const chatInputArea = document.createElement('div');
-            chatInputArea.className = 'chat-input-area';
+            chatInputArea.className = 'input-area';
             chatInputArea.innerHTML = `
-                <textarea id="continue-chat-input" placeholder="Type your follow-up message..."></textarea>
-                <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+                <div class="input-container">
+                    <textarea id="continue-chat-input" placeholder="Continue the conversation..."></textarea>
+                    <button class="send-button" id="send-chat-btn" title="Send Message">
+                        <i data-feather="send" class="feather"></i>
+                    </button>
+                </div>
             `;
             
             // Replace the button row with the chat input area
@@ -918,7 +939,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             // Add a system message
-            addMessage('system', '<i class="fas fa-comment fa-xs"></i> Continue your conversation with the AI...');
+            addMessage('system', createFeatherIcon('message-circle') + ' Continue your conversation with the AI...');
         });
         
         // Create a left side container for try again and start over buttons
@@ -1036,10 +1057,14 @@ Please respond to the user's new message, taking into account the context of the
                 // Restore the continue chat input area
                 const tryAgainArea = document.getElementById('try-again-area');
                 const chatInputArea = document.createElement('div');
-                chatInputArea.className = 'chat-input-area';
+                chatInputArea.className = 'input-area';
                 chatInputArea.innerHTML = `
-                    <textarea id="continue-chat-input" placeholder="Type your follow-up message..."></textarea>
-                    <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+                    <div class="input-container">
+                        <textarea id="continue-chat-input" placeholder="Continue the conversation..."></textarea>
+                        <button class="send-button" id="send-chat-btn" title="Send Message">
+                            <i data-feather="send" class="feather"></i>
+                        </button>
+                    </div>
                 `;
                 
                 tryAgainArea.innerHTML = '';
@@ -1078,7 +1103,7 @@ Please respond to the user's new message, taking into account the context of the
                         // Hide loading overlay
                         loadingOverlay.style.display = 'none';
                         
-                        addMessage('system', `<i class="fas fa-clock fa-xs"></i> The request timed out. The server might be busy. Please try again later.`);
+                        addMessage('system', createFeatherIcon('clock') + ' The request timed out. The server might be busy. Please try again later.');
                         
                         // Restore the buttons
                         addFinalStepButtons();
@@ -1098,7 +1123,7 @@ Please respond to the user's new message, taking into account the context of the
                         // Hide loading overlay
                         loadingOverlay.style.display = 'none';
                         
-                        addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> The server encountered an error. Please try again later.`);
+                        addMessage('system', createFeatherIcon('alert-triangle') + ' The server encountered an error. Please try again later.');
                         
                         // Restore the buttons
                         addFinalStepButtons();
@@ -1109,7 +1134,7 @@ Please respond to the user's new message, taking into account the context of the
                     loadingOverlay.style.display = 'none';
                     
                     // Show error message
-                    addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> Error: ${error.message}`);
+                    addMessage('system', createFeatherIcon('alert-triangle') + ' Error: ' + error.message);
                     
                     // Restore the buttons
                     addFinalStepButtons();
@@ -1449,7 +1474,7 @@ Please respond to the user's new message, taking into account the context of the
                         analysisPanel.classList.add('hidden');
                         
                         // Add a message indicating we're using the improved prompt
-                        addMessage('system', '<i class="fas fa-magic fa-xs"></i> Using the improved prompt to generate a better response...');
+                        addMessage('system', createFeatherIcon('magic') + ' Using the improved prompt to generate a better response...');
                         
                         // Show loading overlay
                         loadingOverlay.style.display = 'flex';
@@ -1549,7 +1574,7 @@ Please respond to the user's new message, taking into account the context of the
                             // Hide loading overlay
                             loadingOverlay.style.display = 'none';
                             
-                            addMessage('system', `<i class="fas fa-clock fa-xs"></i> The request timed out. The server might be busy. Please try again later.`);
+                            addMessage('system', createFeatherIcon('clock') + ' The request timed out. The server might be busy. Please try again later.');
                         }
                     } else if (error.message.includes('aborted') || error.message.includes('Failed to generate') || response?.status === 500) {
                         // Server error or aborted request
@@ -1566,12 +1591,12 @@ Please respond to the user's new message, taking into account the context of the
                             // Hide loading overlay
                             loadingOverlay.style.display = 'none';
                             
-                            addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> The server encountered an error. Please try again later.`);
+                            addMessage('system', createFeatherIcon('alert-triangle') + ' The server encountered an error. Please try again later.');
                         }
                     } else {
                         // Other errors
                         loadingOverlay.style.display = 'none';
-                        addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> ${error.message || 'Failed to generate response. Please try again.'}`);
+                        addMessage('system', createFeatherIcon('alert-triangle') + ' Failed to generate response. Please try again.');
                     }
                 } finally {
                     if (loadingOverlay.style.display !== 'none') {
@@ -1584,4 +1609,7 @@ Please respond to the user's new message, taking into account the context of the
             attemptGeneration();
         });
     }
+
+    // Initialize Feather icons
+    feather.replace();
 }); 

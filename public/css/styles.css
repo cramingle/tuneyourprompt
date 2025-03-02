@@ -1398,4 +1398,56 @@ footer a:hover {
         right: 20px;
         bottom: 20px;
     }
+}
+
+/* Feather Icons Styles */
+.feather {
+  stroke: white;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  width: 16px;
+  height: 16px;
+  vertical-align: -0.125em;
+}
+
+.feather-sm {
+  width: 14px;
+  height: 14px;
+}
+
+.feather-lg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Action buttons with Feather icons */
+.action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.action-icon .feather {
+  stroke: white;
+  transition: var(--transition);
+}
+
+.action-icon:hover .feather {
+  stroke: var(--primary-light);
+}
+
+/* Button with Feather icon */
+button .feather {
+  margin-right: 4px;
+}
+
+button.icon-only .feather {
+  margin-right: 0;
 } 

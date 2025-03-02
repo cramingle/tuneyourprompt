@@ -37,8 +37,8 @@
     <meta property="twitter:description" content="A mobile-optimized tool to help you craft better AI prompts and improve your results">
     <meta property="twitter:image" content="https://tuneyourprompt.vercel.app/img/og-image.jpg">
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Feather Icons (replacing Font Awesome) -->
+    <script src="https://unpkg.com/feather-icons"></script>
     
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/styles.css">
@@ -65,11 +65,11 @@
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
                 <div class="progress-steps">
-                    <div class="step active" id="step-indicator-1"><i class="fas fa-bullseye fa-xs"></i> DEFINE</div>
-                    <div class="step" id="step-indicator-2"><i class="fas fa-pen-fancy fa-xs"></i> WRITE</div>
-                    <div class="step" id="step-indicator-3"><i class="fas fa-comment fa-xs"></i> RESULT</div>
-                    <div class="step" id="step-indicator-4"><i class="fas fa-chart-line fa-xs"></i> ANALYZE</div>
-                    <div class="step" id="step-indicator-5"><i class="fas fa-check-circle fa-xs"></i> FINAL</div>
+                    <div class="step active" id="step-indicator-1"><i data-feather="target" class="feather-sm"></i> DEFINE</div>
+                    <div class="step" id="step-indicator-2"><i data-feather="edit-3" class="feather-sm"></i> WRITE</div>
+                    <div class="step" id="step-indicator-3"><i data-feather="message-circle" class="feather-sm"></i> RESULT</div>
+                    <div class="step" id="step-indicator-4"><i data-feather="bar-chart-2" class="feather-sm"></i> ANALYZE</div>
+                    <div class="step" id="step-indicator-5"><i data-feather="check-circle" class="feather-sm"></i> FINAL</div>
                 </div>
             </div>
         </header>
@@ -80,7 +80,7 @@
                     <!-- Initial welcome message -->
                     <div class="message system">
                         <div class="message-content">
-                            <p><i class="fas fa-robot fa-xs"></i> Welcome to TunePrompt! I'll help you craft better AI prompts. Let's start by defining what you want the AI to create.</p>
+                            <p><i data-feather="cpu" class="feather-sm"></i> Welcome to TunePrompt! I'll help you craft better AI prompts. Let's start by defining what you want the AI to create.</p>
                         </div>
                     </div>
                 </div>
@@ -89,7 +89,7 @@
                     <div class="input-container">
                         <textarea id="goal-input" placeholder="What is your answer expectation?"></textarea>
                         <button class="send-button" id="goal-next" title="Submit Goal">
-                            <i class="fas fa-paper-plane"></i>
+                            <i data-feather="send" class="feather"></i>
                         </button>
                     </div>
                 </div>
@@ -98,7 +98,7 @@
                     <div class="input-container">
                         <textarea id="prompt-input" placeholder="Write your prompt here"></textarea>
                         <button class="send-button" id="prompt-next" title="Submit Prompt">
-                            <i class="fas fa-paper-plane"></i>
+                            <i data-feather="send" class="feather"></i>
                         </button>
                     </div>
                 </div>
@@ -112,7 +112,7 @@
         <div class="analysis-panel hidden" id="analysis-panel">
             <div class="analysis-header">
                 <div class="analysis-title">Prompt Analysis</div>
-                <button class="close-analysis" id="close-analysis" title="Close Analysis"><i class="fas fa-times"></i></button>
+                <button class="close-analysis" id="close-analysis" title="Close Analysis"><i data-feather="x" class="feather-sm"></i></button>
             </div>
             <div class="analysis-tabs">
                 <button class="tab-button active" data-tab="match-tab">Match</button>
@@ -181,10 +181,10 @@
                 <div class="tab-pane" id="improved-tab">
                     <div class="improved-prompt">
                         <div class="improved-prompt-header">
-                            <i class="fas fa-magic"></i> Improved Prompt
+                            <i data-feather="zap" class="feather-sm"></i> Improved Prompt
                         </div>
                         <div class="improved-prompt-text" id="improved-prompt-text">-</div>
-                        <button class="use-improved-prompt" id="use-improved-prompt" title="Use This Prompt"><i class="fas fa-check"></i></button>
+                        <button class="use-improved-prompt" id="use-improved-prompt" title="Use This Prompt"><i data-feather="check" class="feather"></i></button>
                     </div>
                 </div>
             </div>
@@ -193,7 +193,7 @@
         <div class="final-result-panel hidden" id="final-result-panel">
             <div class="final-result-header">
                 <div class="final-result-title">Final Result</div>
-                <button class="close-final-result" id="close-final-result" title="Close Final Result"><i class="fas fa-times"></i></button>
+                <button class="close-final-result" id="close-final-result" title="Close Final Result"><i data-feather="x" class="feather-sm"></i></button>
             </div>
             <div class="final-result-text" id="final-result-text">-</div>
         </div>
@@ -205,6 +205,12 @@
     </div>
 
     <script src="js/app.js"></script>
+    <!-- Initialize Feather Icons -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            feather.replace();
+        });
+    </script>
     <!-- Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
