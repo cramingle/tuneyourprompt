@@ -22,7 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverBtn = document.getElementById('start-over');
     
     const loadingOverlay = document.getElementById('loading-overlay');
-    const loadingMessage = document.querySelector('.loading-overlay p');
+    const loadingMessage = document.getElementById('loading-message');
+    const loadingTip = document.getElementById('loading-tip');
     
     const analysisPanel = document.getElementById('analysis-panel');
     const finalResultPanel = document.getElementById('final-result-panel');
@@ -30,6 +31,60 @@ document.addEventListener('DOMContentLoaded', () => {
     // Current step tracking
     let currentStep = 1;
     let ollamaAvailable = false;
+    
+    // Loading tips array
+    const loadingTips = [
+        "Effective prompts are clear, specific, and provide context for the AI to understand your needs.",
+        "Consider including examples in your prompt to guide the AI's response format.",
+        "Breaking down complex requests into smaller, more manageable parts often yields better results.",
+        "Specify your audience and desired tone to get more appropriate responses.",
+        "Adding constraints to your prompt can help focus the AI's response.",
+        "Be explicit about what you don't want to see in the response.",
+        "Providing background information helps the AI understand the context of your request.",
+        "The more specific your prompt, the more tailored the response will be.",
+        "Consider using a step-by-step approach for complex tasks.",
+        "Experiment with different phrasings to find what works best for your needs."
+    ];
+    
+    // Function to show loading overlay with custom message
+    function showLoadingOverlay(message) {
+        // Set the loading message
+        loadingMessage.textContent = message.toUpperCase();
+        
+        // Show a random tip
+        const randomTip = loadingTips[Math.floor(Math.random() * loadingTips.length)];
+        loadingTip.textContent = randomTip;
+        
+        // Display the overlay
+        loadingOverlay.style.display = 'flex';
+        
+        // Start rotating tips every 8 seconds
+        startRotatingTips();
+    }
+    
+    // Function to rotate loading tips
+    let tipRotationInterval;
+    function startRotatingTips() {
+        clearInterval(tipRotationInterval);
+        tipRotationInterval = setInterval(() => {
+            const randomTip = loadingTips[Math.floor(Math.random() * loadingTips.length)];
+            
+            // Fade out current tip
+            loadingTip.style.opacity = 0;
+            
+            // After fade out, change text and fade in
+            setTimeout(() => {
+                loadingTip.textContent = randomTip;
+                loadingTip.style.opacity = 1;
+            }, 500);
+        }, 8000);
+    }
+    
+    // Function to hide loading overlay and clear tip rotation
+    function hideLoadingOverlay() {
+        loadingOverlay.style.display = 'none';
+        clearInterval(tipRotationInterval);
+    }
     
     // Helper function to create Feather icon HTML
     function createFeatherIcon(name, size = 'sm') {
@@ -325,8 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage('user', promptText);
         
         // Show loading overlay
-        loadingOverlay.style.display = 'flex';
-        loadingMessage.textContent = 'GENERATING RESULT...';
+        showLoadingOverlay('Generating result');
         
         // Track retries
         let retries = 0;
@@ -370,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 
                 // Hide loading overlay
-                loadingOverlay.style.display = 'none';
+                hideLoadingOverlay();
                 
                 // Add AI response message with typing animation
                 if (data.aiResponse) {
@@ -571,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         return attemptEvaluation();
                     } else {
                         // Hide loading overlay
-                        loadingOverlay.style.display = 'none';
+                        hideLoadingOverlay();
                         
                         addMessage('system', createFeatherIcon('clock') + ' The request timed out. The server might be busy. Please try again later.');
                         
@@ -592,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return attemptEvaluation();
                 } else {
                     // Hide loading overlay
-                    loadingOverlay.style.display = 'none';
+                    hideLoadingOverlay();
                     
                     addMessage('system', createFeatherIcon('alert-triangle') + ' An error occurred while evaluating your prompt: ' + error.message + '. Please try again later.');
                     
@@ -977,8 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatInput.value = '';
         
         // Show loading overlay
-        loadingOverlay.style.display = 'flex';
-        loadingMessage.textContent = 'AI IS THINKING...';
+        showLoadingOverlay('AI is thinking');
         
         // Track retries
         let retries = 0;
@@ -1049,7 +1102,7 @@ Please respond to the user's new message, taking into account the context of the
                 const data = await response.json();
                 
                 // Hide loading overlay
-                loadingOverlay.style.display = 'none';
+                hideLoadingOverlay();
                 
                 // Add the AI response to the chat
                 addMessage('ai', data.response, '', true);
@@ -1101,7 +1154,7 @@ Please respond to the user's new message, taking into account the context of the
                         return attemptContinueChat();
                     } else {
                         // Hide loading overlay
-                        loadingOverlay.style.display = 'none';
+                        hideLoadingOverlay();
                         
                         addMessage('system', createFeatherIcon('clock') + ' The request timed out. The server might be busy. Please try again later.');
                         
@@ -1121,7 +1174,7 @@ Please respond to the user's new message, taking into account the context of the
                         return attemptContinueChat();
                     } else {
                         // Hide loading overlay
-                        loadingOverlay.style.display = 'none';
+                        hideLoadingOverlay();
                         
                         addMessage('system', createFeatherIcon('alert-triangle') + ' The server encountered an error. Please try again later.');
                         
@@ -1131,7 +1184,7 @@ Please respond to the user's new message, taking into account the context of the
                 } else {
                     // Other errors
                     // Hide loading overlay
-                    loadingOverlay.style.display = 'none';
+                    hideLoadingOverlay();
                     
                     // Show error message
                     addMessage('system', createFeatherIcon('alert-triangle') + ' Error: ' + error.message);
@@ -1477,7 +1530,7 @@ Please respond to the user's new message, taking into account the context of the
                         addMessage('system', createFeatherIcon('magic') + ' Using the improved prompt to generate a better response...');
                         
                         // Show loading overlay
-                        loadingOverlay.style.display = 'flex';
+                        showLoadingOverlay('Generating response');
                         loadingMessage.textContent = 'GENERATING RESPONSE...';
                     }
                     
@@ -1515,7 +1568,7 @@ Please respond to the user's new message, taking into account the context of the
                     const data = await response.json();
                     
                     // Hide loading overlay
-                    loadingOverlay.style.display = 'none';
+                    hideLoadingOverlay();
                     
                     // Add a separator line in the chat
                     const separator = document.createElement('div');
@@ -1572,7 +1625,7 @@ Please respond to the user's new message, taking into account the context of the
                             return attemptGeneration();
                         } else {
                             // Hide loading overlay
-                            loadingOverlay.style.display = 'none';
+                            hideLoadingOverlay();
                             
                             addMessage('system', createFeatherIcon('clock') + ' The request timed out. The server might be busy. Please try again later.');
                         }
@@ -1589,18 +1642,18 @@ Please respond to the user's new message, taking into account the context of the
                             return attemptGeneration();
                         } else {
                             // Hide loading overlay
-                            loadingOverlay.style.display = 'none';
+                            hideLoadingOverlay();
                             
                             addMessage('system', createFeatherIcon('alert-triangle') + ' The server encountered an error. Please try again later.');
                         }
                     } else {
                         // Other errors
-                        loadingOverlay.style.display = 'none';
+                        hideLoadingOverlay();
                         addMessage('system', createFeatherIcon('alert-triangle') + ' Failed to generate response. Please try again.');
                     }
                 } finally {
                     if (loadingOverlay.style.display !== 'none') {
-                        loadingOverlay.style.display = 'none';
+                        hideLoadingOverlay();
                     }
                 }
             }

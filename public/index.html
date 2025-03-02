@@ -80,7 +80,7 @@
                     <!-- Initial welcome message -->
                     <div class="message system">
                         <div class="message-content">
-                            <p><i data-feather="cpu" class="feather-sm"></i> Welcome to TunePrompt! I'll help you craft better AI prompts. Let's start by defining what you want the AI to create.</p>
+                            <p> Welcome to TunePrompt! I'll help you craft better AI prompts.</p>
                         </div>
                     </div>
                 </div>
@@ -199,8 +199,34 @@
         </div>
 
         <div class="loading-overlay" id="loading-overlay">
-            <div class="spinner"></div>
-            <p>ANALYZING PROMPT...</p>
+            <div class="loading-content">
+                <!-- Animated Logo -->
+                <div class="logo-loader">
+                    <svg width="120" height="120" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path class="logo-path top-path" d="M16 4L4 10L16 16L28 10L16 4Z" stroke="#7C4DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path class="logo-path bottom-path" d="M4 22L16 28L28 22" stroke="#7C4DFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path class="logo-path middle-path" d="M4 16L16 22L28 16" stroke="#00E5FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle class="logo-pulse" cx="16" cy="16" r="2" fill="#FFFFFF" opacity="0"/>
+                    </svg>
+                </div>
+                
+                <!-- Loading Message with Dots -->
+                <div class="loading-message-container">
+                    <div class="loading-message" id="loading-message">ANALYZING PROMPT</div>
+                    <div class="loading-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+                
+                <!-- Loading Tip -->
+                <div class="loading-tips">
+                    <div class="tip-container">
+                        <p id="loading-tip">Effective prompts are clear, specific, and provide context for the AI to understand your needs.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
