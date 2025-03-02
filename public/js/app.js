@@ -955,26 +955,37 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingOverlay.style.display = 'flex';
         loadingMessage.textContent = 'AI IS THINKING...';
         
+        // Track retries
+        let retries = 0;
+        const maxRetries = 2;
+        
         // Get the goal and previous context
         const goalText = goalInput.value.trim();
         
-        // Create a context from the previous messages
-        const chatHistory = Array.from(chatMessages.querySelectorAll('.message'))
-            .map(msg => {
-                const isAi = msg.classList.contains('ai');
-                const isUser = msg.classList.contains('user');
-                const content = msg.querySelector('.message-content').textContent.trim();
+        async function attemptContinueChat() {
+            try {
+                // Update loading message if retrying
+                if (retries > 0) {
+                    loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
+                }
                 
-                if (isAi) return `AI: ${content}`;
-                if (isUser) return `User: ${content}`;
-                return null;
-            })
-            .filter(msg => msg !== null)
-            .slice(-10) // Get last 10 messages for context
-            .join('\n');
-        
-        // Create a prompt that includes context
-        const contextPrompt = `
+                // Create a context from the previous messages
+                const chatHistory = Array.from(chatMessages.querySelectorAll('.message'))
+                    .map(msg => {
+                        const isAi = msg.classList.contains('ai');
+                        const isUser = msg.classList.contains('user');
+                        const content = msg.querySelector('.message-content').textContent.trim();
+                        
+                        if (isAi) return `AI: ${content}`;
+                        if (isUser) return `User: ${content}`;
+                        return null;
+                    })
+                    .filter(msg => msg !== null)
+                    .slice(-10) // Get last 10 messages for context
+                    .join('\n');
+                
+                // Create a prompt that includes context
+                const contextPrompt = `
 The following is a conversation between a user and an AI assistant.
 The user's original goal was: "${goalText}"
 
@@ -985,69 +996,125 @@ User's new message: ${message}
 
 Please respond to the user's new message, taking into account the context of the previous conversation and their original goal.
 `;
-        
-        // Send the request to the API
-        fetch('/api/generate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                prompt: contextPrompt,
-                goal: goalText
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Server responded with status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Hide loading overlay
-            loadingOverlay.style.display = 'none';
-            
-            // Add the AI response to the chat
-            addMessage('ai', data.response, '', true);
-            
-            // Restore the continue chat input area
-            const tryAgainArea = document.getElementById('try-again-area');
-            const chatInputArea = document.createElement('div');
-            chatInputArea.className = 'chat-input-area';
-            chatInputArea.innerHTML = `
-                <textarea id="continue-chat-input" placeholder="Type your follow-up message..."></textarea>
-                <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
-            `;
-            
-            tryAgainArea.innerHTML = '';
-            tryAgainArea.appendChild(chatInputArea);
-            
-            // Focus on the chat input
-            document.getElementById('continue-chat-input').focus();
-            
-            // Add event listener for the send button
-            document.getElementById('send-chat-btn').addEventListener('click', sendContinueChatMessage);
-            
-            // Add event listener for Enter key
-            document.getElementById('continue-chat-input').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendContinueChatMessage();
+                
+                // Create an AbortController for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
+                
+                // Send the request to the API
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: contextPrompt,
+                        goal: goalText
+                    }),
+                    signal: controller.signal
+                });
+                
+                // Clear the timeout
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
                 }
-            });
-        })
-        .catch(error => {
-            console.error('Error in continue chat:', error);
-            
-            // Hide loading overlay
-            loadingOverlay.style.display = 'none';
-            
-            // Show error message
-            addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> Error: ${error.message}`);
-            
-            // Restore the buttons
-            addFinalStepButtons();
-        });
+                
+                const data = await response.json();
+                
+                // Hide loading overlay
+                loadingOverlay.style.display = 'none';
+                
+                // Add the AI response to the chat
+                addMessage('ai', data.response, '', true);
+                
+                // Restore the continue chat input area
+                const tryAgainArea = document.getElementById('try-again-area');
+                const chatInputArea = document.createElement('div');
+                chatInputArea.className = 'chat-input-area';
+                chatInputArea.innerHTML = `
+                    <textarea id="continue-chat-input" placeholder="Type your follow-up message..."></textarea>
+                    <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+                `;
+                
+                tryAgainArea.innerHTML = '';
+                tryAgainArea.appendChild(chatInputArea);
+                
+                // Focus on the chat input
+                document.getElementById('continue-chat-input').focus();
+                
+                // Add event listener for the send button
+                document.getElementById('send-chat-btn').addEventListener('click', sendContinueChatMessage);
+                
+                // Add event listener for Enter key
+                document.getElementById('continue-chat-input').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendContinueChatMessage();
+                    }
+                });
+            } catch (error) {
+                console.error('Error in continue chat:', error);
+                
+                // Check if it's a timeout error
+                if (error.name === 'AbortError') {
+                    console.log('Request timed out');
+                    
+                    if (retries < maxRetries) {
+                        retries++;
+                        console.log(`Retry attempt ${retries}/${maxRetries} after timeout`);
+                        
+                        // Wait a moment before retrying
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        
+                        // Try again
+                        return attemptContinueChat();
+                    } else {
+                        // Hide loading overlay
+                        loadingOverlay.style.display = 'none';
+                        
+                        addMessage('system', `<i class="fas fa-clock fa-xs"></i> The request timed out. The server might be busy. Please try again later.`);
+                        
+                        // Restore the buttons
+                        addFinalStepButtons();
+                    }
+                } else if (error.message.includes('aborted') || error.message.includes('Failed to generate') || error.message.includes('500')) {
+                    // Server error or aborted request
+                    if (retries < maxRetries) {
+                        retries++;
+                        console.log(`Retry attempt ${retries}/${maxRetries} after server error`);
+                        
+                        // Wait a moment before retrying
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        
+                        // Try again
+                        return attemptContinueChat();
+                    } else {
+                        // Hide loading overlay
+                        loadingOverlay.style.display = 'none';
+                        
+                        addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> The server encountered an error. Please try again later.`);
+                        
+                        // Restore the buttons
+                        addFinalStepButtons();
+                    }
+                } else {
+                    // Other errors
+                    // Hide loading overlay
+                    loadingOverlay.style.display = 'none';
+                    
+                    // Show error message
+                    addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> Error: ${error.message}`);
+                    
+                    // Restore the buttons
+                    addFinalStepButtons();
+                }
+            }
+        }
+        
+        // Start the continue chat process
+        attemptContinueChat();
     }
 
     // Add CSS for the chat separator
@@ -1057,7 +1124,7 @@ Please respond to the user's new message, taking into account the context of the
         display: flex;
         align-items: center;
         text-align: center;
-        margin: 20px 0;
+        margin: 15px 0;
     }
 
     .chat-separator::before,
@@ -1068,8 +1135,8 @@ Please respond to the user's new message, taking into account the context of the
     }
 
     .chat-separator span {
-        padding: 0 10px;
-        font-size: 0.8rem;
+        padding: 0 8px;
+        font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 1px;
         color: var(--light-text);
@@ -1083,31 +1150,31 @@ Please respond to the user's new message, taking into account the context of the
         color: white;
         border: none;
         border-radius: 50%;
-        width: 32px;
-        height: 32px;
+        width: 24px;
+        height: 24px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         transition: all 0.2s ease;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        font-size: 0.8rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        font-size: 0.7rem;
     }
     
     .continue-chat-button:hover {
         background-color: var(--accent-hover);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
     
     /* Chat Input Area Styles */
     .chat-input-area {
         display: flex;
-        margin-top: 10px;
+        margin-top: 8px;
         background-color: var(--input-bg);
-        border-radius: 8px;
-        padding: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        border-radius: 6px;
+        padding: 5px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
     #continue-chat-input {
@@ -1116,9 +1183,9 @@ Please respond to the user's new message, taking into account the context of the
         background-color: transparent;
         color: var(--text-color);
         font-family: inherit;
-        font-size: 1rem;
-        padding: 8px;
-        min-height: 40px;
+        font-size: 0.9rem;
+        padding: 5px;
+        min-height: 30px;
         resize: vertical;
         outline: none;
     }
@@ -1128,16 +1195,16 @@ Please respond to the user's new message, taking into account the context of the
         color: white;
         border: none;
         border-radius: 50%;
-        width: 32px;
-        height: 32px;
+        width: 24px;
+        height: 24px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         transition: all 0.2s ease;
-        margin-left: 8px;
+        margin-left: 5px;
         align-self: flex-end;
-        font-size: 0.8rem;
+        font-size: 0.7rem;
     }
     
     #send-chat-btn:hover {
@@ -1146,77 +1213,110 @@ Please respond to the user's new message, taking into account the context of the
     
     /* Make all buttons in input area smaller */
     .try-again-button, .start-over-button, .analyze-button {
-        width: 32px;
-        height: 32px;
-        font-size: 0.8rem;
+        width: 24px;
+        height: 24px;
+        font-size: 0.7rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
     
     /* Adjust button spacing */
     .button-row {
-        gap: 8px;
+        gap: 5px;
+        display: flex;
+        justify-content: space-between;
     }
     
     .left-buttons, .right-buttons {
-        gap: 8px;
+        gap: 5px;
+        display: flex;
     }
     
-    /* Make analysis panel more proportional */
+    /* Make analysis panel much smaller */
     #analysis-panel {
-        max-width: 90%;
-        max-height: 80vh;
+        max-width: 80%;
+        max-height: 70vh;
         width: auto;
-        padding: 15px;
-        font-size: 0.9rem;
+        padding: 10px;
+        font-size: 0.8rem;
+        border-radius: 6px;
     }
     
     #analysis-panel h2 {
-        font-size: 1.2rem;
-        margin-bottom: 10px;
+        font-size: 1rem;
+        margin-bottom: 8px;
     }
     
     #analysis-panel .tab-buttons {
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
     
     #analysis-panel .tab-button {
-        padding: 5px 10px;
-        font-size: 0.8rem;
+        padding: 3px 6px;
+        font-size: 0.7rem;
+        border-radius: 3px;
     }
     
     #analysis-panel .metric-bar {
-        height: 8px;
-        margin: 5px 0;
+        height: 5px;
+        margin: 3px 0;
+        border-radius: 2px;
     }
     
     #analysis-panel .metric-info {
-        margin-bottom: 10px;
+        margin-bottom: 6px;
+    }
+    
+    #analysis-panel .metric-label {
+        font-size: 0.75rem;
+    }
+    
+    #analysis-panel .metric-score {
+        font-size: 0.75rem;
     }
     
     #analysis-panel .metric-feedback {
-        font-size: 0.85rem;
-        margin-top: 5px;
+        font-size: 0.75rem;
+        margin-top: 3px;
     }
     
     #analysis-panel .improved-prompt-section {
-        margin-top: 10px;
-    }
-    
-    #analysis-panel #improved-prompt-text {
-        font-size: 0.9rem;
-        padding: 8px;
-    }
-    
-    #analysis-panel #use-improved-prompt {
-        padding: 5px 10px;
-        font-size: 0.8rem;
         margin-top: 8px;
     }
     
+    #analysis-panel #improved-prompt-text {
+        font-size: 0.8rem;
+        padding: 5px;
+        border-radius: 3px;
+    }
+    
+    #analysis-panel #use-improved-prompt {
+        padding: 3px 6px;
+        font-size: 0.7rem;
+        margin-top: 5px;
+        border-radius: 3px;
+    }
+    
     #analysis-panel .close-button {
-        top: 8px;
-        right: 8px;
-        width: 24px;
-        height: 24px;
+        top: 5px;
+        right: 5px;
+        width: 18px;
+        height: 18px;
+        font-size: 0.7rem;
+        border-radius: 50%;
+    }
+    
+    /* Make all input areas more compact */
+    .input-area {
+        padding: 5px;
+    }
+    
+    .input-area textarea {
+        padding: 5px;
+        font-size: 0.9rem;
+    }
+    
+    .input-area button {
+        padding: 5px 10px;
         font-size: 0.8rem;
     }
     `;
@@ -1239,77 +1339,139 @@ Please respond to the user's new message, taking into account the context of the
     const useImprovedPromptBtn = document.getElementById('use-improved-prompt');
     if (useImprovedPromptBtn) {
         useImprovedPromptBtn.addEventListener('click', async () => {
-            try {
-                const improvedPrompt = window.currentAnalysisData?.improvedPrompt || 
-                    document.getElementById('improved-prompt-text').innerText;
-                const goalText = document.getElementById('goal-input').value.trim();
-                
-                if (!improvedPrompt) return;
-                
-                console.log('Using improved prompt:', improvedPrompt);
-                
-                // Hide the analysis panel
-                analysisPanel.classList.add('hidden');
-                
-                // Add a message indicating we're using the improved prompt
-                addMessage('system', '<i class="fas fa-magic fa-xs"></i> Using the improved prompt to generate a better response...');
-                
-                // Show loading overlay
-                loadingOverlay.style.display = 'flex';
-                loadingMessage.textContent = 'GENERATING RESPONSE...';
-                
-                console.log('Sending request to /api/generate with prompt:', improvedPrompt.substring(0, 100) + '...');
-                
-                const response = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        prompt: improvedPrompt,
-                        goal: goalText
-                    })
-                });
-                
-                console.log('Response status:', response.status);
-                
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    const errorMessage = errorData.message || errorData.error || `Server responded with status: ${response.status}`;
-                    console.error('Error response data:', errorData);
+            // Track retries
+            let retries = 0;
+            const maxRetries = 2;
+            
+            async function attemptGeneration() {
+                try {
+                    const improvedPrompt = window.currentAnalysisData?.improvedPrompt || 
+                        document.getElementById('improved-prompt-text').innerText;
+                    const goalText = document.getElementById('goal-input').value.trim();
                     
-                    // Show error message
+                    if (!improvedPrompt) return;
+                    
+                    // Update loading message if retrying
+                    if (retries > 0) {
+                        loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
+                    } else {
+                        console.log('Using improved prompt:', improvedPrompt);
+                        
+                        // Hide the analysis panel
+                        analysisPanel.classList.add('hidden');
+                        
+                        // Add a message indicating we're using the improved prompt
+                        addMessage('system', '<i class="fas fa-magic fa-xs"></i> Using the improved prompt to generate a better response...');
+                        
+                        // Show loading overlay
+                        loadingOverlay.style.display = 'flex';
+                        loadingMessage.textContent = 'GENERATING RESPONSE...';
+                    }
+                    
+                    console.log('Sending request to /api/generate with prompt:', improvedPrompt.substring(0, 100) + '...');
+                    
+                    // Create an AbortController for timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
+                    
+                    const response = await fetch('/api/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt: improvedPrompt,
+                            goal: goalText
+                        }),
+                        signal: controller.signal
+                    });
+                    
+                    // Clear the timeout
+                    clearTimeout(timeoutId);
+                    
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        const errorMessage = errorData.message || errorData.error || `Server responded with status: ${response.status}`;
+                        console.error('Error response data:', errorData);
+                        
+                        throw new Error(errorMessage);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Hide loading overlay
                     loadingOverlay.style.display = 'none';
-                    addMessage('system', `<i class="fas fa-exclamation-triangle"></i> Error: ${errorMessage}`);
-                    return;
+                    
+                    // Add a separator line in the chat
+                    const separator = document.createElement('div');
+                    separator.className = 'chat-separator';
+                    separator.innerHTML = '<span>Final Result</span>';
+                    chatMessages.appendChild(separator);
+                    
+                    // Add the AI response to the chat
+                    addMessage('ai', formatAIResponse(data.response), '', true);
+                    
+                    // Update progress to step 5 (Final)
+                    updateProgress(5);
+                    
+                    // Add Try Again and Start Over buttons
+                    addFinalStepButtons();
+                    
+                } catch (error) {
+                    console.error('Error generating response:', error);
+                    
+                    // Check if it's a timeout error
+                    if (error.name === 'AbortError') {
+                        console.log('Request timed out');
+                        
+                        if (retries < maxRetries) {
+                            retries++;
+                            console.log(`Retry attempt ${retries}/${maxRetries} after timeout`);
+                            
+                            // Wait a moment before retrying
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            
+                            // Try again
+                            return attemptGeneration();
+                        } else {
+                            // Hide loading overlay
+                            loadingOverlay.style.display = 'none';
+                            
+                            addMessage('system', `<i class="fas fa-clock fa-xs"></i> The request timed out. The server might be busy. Please try again later.`);
+                        }
+                    } else if (error.message.includes('aborted') || error.message.includes('Failed to generate') || response?.status === 500) {
+                        // Server error or aborted request
+                        if (retries < maxRetries) {
+                            retries++;
+                            console.log(`Retry attempt ${retries}/${maxRetries} after server error`);
+                            
+                            // Wait a moment before retrying
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            
+                            // Try again
+                            return attemptGeneration();
+                        } else {
+                            // Hide loading overlay
+                            loadingOverlay.style.display = 'none';
+                            
+                            addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> The server encountered an error. Please try again later.`);
+                        }
+                    } else {
+                        // Other errors
+                        loadingOverlay.style.display = 'none';
+                        addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> ${error.message || 'Failed to generate response. Please try again.'}`);
+                    }
+                } finally {
+                    if (loadingOverlay.style.display !== 'none') {
+                        loadingOverlay.style.display = 'none';
+                    }
                 }
-                
-                const data = await response.json();
-                
-                // Hide loading overlay
-                loadingOverlay.style.display = 'none';
-                
-                // Add a separator line in the chat
-                const separator = document.createElement('div');
-                separator.className = 'chat-separator';
-                separator.innerHTML = '<span>Final Result</span>';
-                chatMessages.appendChild(separator);
-                
-                // Add the AI response to the chat
-                addMessage('ai', formatAIResponse(data.response), '', true);
-                
-                // Update progress to step 5 (Final)
-                updateProgress(5);
-                
-                // Add Try Again and Start Over buttons
-                addFinalStepButtons();
-                
-            } catch (error) {
-                console.error('Error generating response:', error);
-                addMessage('system', `<i class="fas fa-exclamation-triangle fa-xs"></i> ${error.message || 'Failed to generate response. Please try again.'}`);
-            } finally {
-                loadingOverlay.style.display = 'none';
             }
+            
+            // Start the generation process
+            attemptGeneration();
         });
     }
 }); 

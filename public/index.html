@@ -86,7 +86,7 @@
                 </div>
 
                 <div class="input-area" id="goal-input-area">
-                    <div class="input-label"><i class="fas fa-bullseye fa-xs"></i> WHAT DO YOU WANT THE AI TO CREATE?</div>
+                    <div class="input-label"><i class="fas fa-bullseye fa-xs"></i> What is your answer expectation?</div>
                     <div class="input-container">
                         <textarea id="goal-input" placeholder="Example: A funny story about a pirate"></textarea>
                         <button class="send-button" id="goal-next" title="Submit Goal">
@@ -96,7 +96,7 @@
                 </div>
 
                 <div class="input-area hidden" id="prompt-input-area">
-                    <div class="input-label"><i class="fas fa-pen-fancy fa-xs"></i> WRITE YOUR PROMPT</div>
+                    <div class="input-label"><i class="fas fa-pen-fancy fa-xs"></i> Write Your Prompt</div>
                     <div class="input-container">
                         <textarea id="prompt-input" placeholder="Example: Write a story"></textarea>
                         <button class="send-button" id="prompt-next" title="Submit Prompt">
@@ -113,15 +113,15 @@
 
         <div class="analysis-panel hidden" id="analysis-panel">
             <div class="analysis-header">
-                <div class="analysis-title">PROMPT ANALYSIS</div>
+                <div class="analysis-title">Prompt Analysis</div>
                 <button class="close-analysis" id="close-analysis" title="Close Analysis"><i class="fas fa-times"></i></button>
             </div>
             <div class="analysis-tabs">
-                <button class="tab-button active" data-tab="match-tab">MATCH</button>
-                <button class="tab-button" data-tab="clarity-tab">CLARITY</button>
-                <button class="tab-button" data-tab="detail-tab">DETAIL</button>
-                <button class="tab-button" data-tab="relevance-tab">RELEVANCE</button>
-                <button class="tab-button" data-tab="improved-tab">IMPROVED</button>
+                <button class="tab-button active" data-tab="match-tab">Match</button>
+                <button class="tab-button" data-tab="clarity-tab">Clarity</button>
+                <button class="tab-button" data-tab="detail-tab">Detail</button>
+                <button class="tab-button" data-tab="relevance-tab">Relevance</button>
+                <button class="tab-button" data-tab="improved-tab">Improved</button>
             </div>
             <div class="tab-content">
                 <div class="tab-pane active" id="match-tab">
@@ -138,7 +138,7 @@
                 <div class="tab-pane" id="clarity-tab">
                     <div class="metric">
                         <div class="metric-header">
-                            <div class="metric-name">CLARITY</div>
+                            <div class="metric-name">Clarity</div>
                             <div class="metric-score" id="clarity-score">0</div>
                         </div>
                         <div class="metric-bar">
@@ -153,7 +153,7 @@
                 <div class="tab-pane" id="detail-tab">
                     <div class="metric">
                         <div class="metric-header">
-                            <div class="metric-name">DETAIL</div>
+                            <div class="metric-name">Detail</div>
                             <div class="metric-score" id="detail-score">0</div>
                         </div>
                         <div class="metric-bar">
@@ -168,7 +168,7 @@
                 <div class="tab-pane" id="relevance-tab">
                     <div class="metric">
                         <div class="metric-header">
-                            <div class="metric-name">RELEVANCE</div>
+                            <div class="metric-name">Relevance</div>
                             <div class="metric-score" id="relevance-score">0</div>
                         </div>
                         <div class="metric-bar">
@@ -183,7 +183,7 @@
                 <div class="tab-pane" id="improved-tab">
                     <div class="improved-prompt">
                         <div class="improved-prompt-header">
-                            <i class="fas fa-magic"></i> IMPROVED PROMPT
+                            <i class="fas fa-magic"></i> Improved Prompt
                         </div>
                         <div class="improved-prompt-text" id="improved-prompt-text">-</div>
                         <button class="use-improved-prompt" id="use-improved-prompt" title="Use This Prompt"><i class="fas fa-check"></i></button>
@@ -194,7 +194,7 @@
 
         <div class="final-result-panel hidden" id="final-result-panel">
             <div class="final-result-header">
-                <div class="final-result-title">FINAL RESULT</div>
+                <div class="final-result-title">Final Result</div>
                 <button class="close-final-result" id="close-final-result" title="Close Final Result"><i class="fas fa-times"></i></button>
             </div>
             <div class="final-result-text" id="final-result-text">-</div>
