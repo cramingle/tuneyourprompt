@@ -46,6 +46,37 @@ function calculateSimilarity(text1, text2) {
   return Math.round((similarity + 1) / 2 * 100);
 }
 
+// Calculate the overall match score based on similarity and quality analysis
+function calculateOverallMatchScore(textSimilarity, qualityAnalysis) {
+  if (!qualityAnalysis) {
+    return textSimilarity;
+  }
+  
+  // Get scores from quality analysis
+  const clarityScore = qualityAnalysis.clarity?.score || 0;
+  const detailScore = qualityAnalysis.detail?.score || 0;
+  const relevanceScore = qualityAnalysis.relevance?.score || 0;
+  
+  // Weight the scores (adjust weights as needed)
+  // Text similarity: 40%, Clarity: 20%, Detail: 20%, Relevance: 20%
+  const weightedScore = (
+    (textSimilarity * 0.4) +
+    (clarityScore * 0.2) +
+    (detailScore * 0.2) +
+    (relevanceScore * 0.2)
+  );
+  
+  console.log('Match score calculation:', {
+    textSimilarity,
+    clarityScore,
+    detailScore,
+    relevanceScore,
+    weightedScore
+  });
+  
+  return Math.round(weightedScore);
+}
+
 // Helper function to analyze prompt quality
 async function analyzePromptQuality(prompt, goal) {
   try {
@@ -157,6 +188,14 @@ async function analyzePromptQuality(prompt, goal) {
   const promptEndsWithQuestion = prompt.trim().endsWith('?');
   const hasInstructionWords = /please|create|write|generate|make/i.test(prompt);
   
+  console.log('Clarity check:', { 
+    prompt: prompt.substring(0, 50) + '...',
+    hasClarity, 
+    promptEndsWithQuestion, 
+    hasInstructionWords,
+    clarityKeywords
+  });
+  
   if (hasClarity && hasInstructionWords) {
     analysis.clarity.score = 90;
     analysis.clarity.feedback = 'Excellent clarity! Your prompt clearly specifies what you want.';
@@ -175,6 +214,12 @@ async function analyzePromptQuality(prompt, goal) {
   const wordCount = prompt.split(/\s+/).length;
   const sentenceCount = prompt.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
   const hasExamples = prompt.includes('example') || prompt.includes('like') || prompt.includes('such as');
+  
+  console.log('Detail check:', { 
+    wordCount, 
+    sentenceCount, 
+    hasExamples 
+  });
   
   if (wordCount > 20 && hasExamples) {
     analysis.detail.score = 90;
@@ -198,6 +243,12 @@ async function analyzePromptQuality(prompt, goal) {
   const promptLower = prompt.toLowerCase();
   const matchingKeywords = goalKeywords.filter(keyword => promptLower.includes(keyword));
   const relevanceScore = Math.round((matchingKeywords.length / Math.max(1, goalKeywords.length)) * 100);
+  
+  console.log('Relevance check:', { 
+    goalKeywords, 
+    matchingKeywords, 
+    relevanceScore 
+  });
   
   if (relevanceScore > 80) {
     analysis.relevance.score = 90;
@@ -234,7 +285,7 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis, aiResponse
     Goal: "${goal}"
     Previous AI response: "${aiResponse.substring(0, 500)}"
     
-    Create an improved version of this prompt that will better achieve the stated goal.
+    Create an improved version of the ORIGINAL PROMPT that will better achieve the stated goal.
     The improved prompt should address any issues with clarity, detail, and relevance.
     
     Analyze what was missing in the original prompt based on:
@@ -242,7 +293,8 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis, aiResponse
     2. Detail score: ${analysis.detail.score}/100 - ${analysis.detail.feedback}
     3. Relevance score: ${analysis.relevance.score}/100 - ${analysis.relevance.feedback}
     
-    Return ONLY the improved prompt text with no additional explanation.
+    IMPORTANT: Return ONLY the improved version of the original prompt. DO NOT return a response to the prompt.
+    The improved prompt should be a better version of "${originalPrompt}" that a user could submit to an AI.
     `;
     
     console.log('Sending improve prompt request to AI API');
@@ -287,8 +339,23 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis, aiResponse
           improvedText = improvedText.substring(1, improvedText.length - 1);
         }
         
-        console.log('Successfully generated AI improved prompt');
-        return improvedText;
+        // Check if the improved text is too similar to the AI response
+        const similarityToResponse = calculateSimilarity(improvedText, aiResponse);
+        const similarityToOriginal = calculateSimilarity(improvedText, originalPrompt);
+        
+        console.log('Improved prompt similarity check:', {
+          similarityToResponse,
+          similarityToOriginal
+        });
+        
+        // If the improved text is more similar to the AI response than to the original prompt,
+        // it's likely the AI returned a response instead of an improved prompt
+        if (similarityToResponse > 80 && similarityToResponse > similarityToOriginal * 2) {
+          console.log('AI returned a response instead of an improved prompt, falling back to rule-based improvement');
+        } else {
+          console.log('Successfully generated AI improved prompt');
+          return improvedText;
+        }
       } else {
         console.log('AI returned empty improved prompt, falling back to rule-based improvement');
       }
@@ -311,7 +378,7 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis, aiResponse
     if (!suggestion.toLowerCase().includes('please') && !suggestion.toLowerCase().includes('create') && 
         !suggestion.toLowerCase().includes('write') && !suggestion.toLowerCase().includes('generate')) {
       improvements.push('add instruction words');
-      suggestion = `Please create ${suggestion}`;
+      suggestion = `Please explain ${suggestion}`;
     }
     
     if (goal.toLowerCase().includes('funny') && !suggestion.toLowerCase().includes('humor') && !suggestion.toLowerCase().includes('funny')) {
@@ -349,12 +416,12 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis, aiResponse
     const wordCount = suggestion.split(/\s+/).length;
     if (wordCount < 15) {
       improvements.push('add more detail');
-      suggestion = suggestion.replace(/\.$/, '') + ' Provide more specific instructions and context.';
+      suggestion = suggestion.replace(/\.$/, '') + ' Provide a comprehensive explanation with examples and current scientific understanding.';
     }
     
     if (!suggestion.toLowerCase().includes('example') && !suggestion.toLowerCase().includes('such as')) {
       improvements.push('add examples');
-      suggestion = suggestion.replace(/\.$/, '') + ' Include examples to illustrate what you want.';
+      suggestion = suggestion.replace(/\.$/, '') + ' Include examples to illustrate the concept.';
     }
   }
   
@@ -496,10 +563,13 @@ app.post('/api/evaluate', async (req, res) => {
     console.log('Final AI response:', aiResponse.substring(0, 100) + '...');
     
     // Calculate match percentage
-    const matchPercentage = calculateSimilarity(aiResponse, goal);
+    const textSimilarity = calculateSimilarity(aiResponse, goal);
     
     // Analyze prompt quality
     const qualityAnalysis = await analyzePromptQuality(prompt, goal);
+    
+    // Calculate overall match score
+    const matchPercentage = calculateOverallMatchScore(textSimilarity, qualityAnalysis);
     
     // Generate improved prompt suggestion
     const improvedPrompt = await generateImprovedPrompt(prompt, goal, qualityAnalysis, aiResponse);
@@ -509,7 +579,8 @@ app.post('/api/evaluate', async (req, res) => {
       aiResponse,
       matchPercentage,
       qualityAnalysis,
-      improvedPrompt
+      improvedPrompt,
+      textSimilarity
     });
     
   } catch (error) {

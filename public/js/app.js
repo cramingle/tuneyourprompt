@@ -254,8 +254,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     clarityFeedback: data.qualityAnalysis?.clarity?.feedback || 'Consider adding more clarity to your prompt.',
                     detailFeedback: data.qualityAnalysis?.detail?.feedback || 'Add more specific details to your prompt.',
                     relevanceFeedback: data.qualityAnalysis?.relevance?.feedback || 'Make sure your prompt aligns with your goal.',
-                    improvedPrompt: data.improvedPrompt || 'Please provide a more specific prompt with clear instructions and details.'
+                    improvedPrompt: data.improvedPrompt || 'Please provide a more specific prompt with clear instructions and details.',
+                    textSimilarity: data.textSimilarity || 0,
+                    originalPrompt: promptText
                 };
+                
+                // Log the raw data from the server for debugging
+                console.log('Raw server response:', {
+                    matchPercentage: data.matchPercentage,
+                    textSimilarity: data.textSimilarity,
+                    qualityAnalysis: data.qualityAnalysis,
+                    improvedPrompt: data.improvedPrompt
+                });
                 
                 // Log the analysis data for debugging
                 console.log('Analysis data:', window.currentAnalysisData);
@@ -528,6 +538,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const matchScore = data.matchScore || 75; // Default to 75% if not provided
             matchValue.textContent = `${matchScore}%`;
             matchBarFill.style.width = `${matchScore}%`;
+            
+            // Add text similarity info if available
+            if (data.textSimilarity) {
+                const matchInfo = document.querySelector('.match-info');
+                if (matchInfo) {
+                    const textSimilaritySpan = document.createElement('span');
+                    textSimilaritySpan.className = 'text-similarity-info';
+                    textSimilaritySpan.textContent = `(Content similarity: ${data.textSimilarity}%)`;
+                    textSimilaritySpan.style.fontSize = '0.8rem';
+                    textSimilaritySpan.style.color = 'var(--light-text)';
+                    textSimilaritySpan.style.marginLeft = '8px';
+                    
+                    // Remove any existing text similarity info
+                    const existingInfo = matchInfo.querySelector('.text-similarity-info');
+                    if (existingInfo) {
+                        existingInfo.remove();
+                    }
+                    
+                    matchInfo.appendChild(textSimilaritySpan);
+                }
+            }
         }
         
         // Set up metrics (clarity, detail, relevance)
@@ -558,6 +589,44 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.improvedPrompt && data.improvedPrompt.trim() !== '-' && data.improvedPrompt.trim() !== '') {
                 console.log('Setting improved prompt text to:', data.improvedPrompt);
                 improvedPromptText.textContent = data.improvedPrompt;
+                
+                // Add original prompt for comparison if available
+                if (data.originalPrompt) {
+                    const improvedPromptSection = document.querySelector('.improved-prompt-section');
+                    if (improvedPromptSection) {
+                        // Check if original prompt comparison already exists
+                        let originalPromptDiv = improvedPromptSection.querySelector('.original-prompt-comparison');
+                        
+                        if (!originalPromptDiv) {
+                            originalPromptDiv = document.createElement('div');
+                            originalPromptDiv.className = 'original-prompt-comparison';
+                            originalPromptDiv.style.marginTop = '10px';
+                            originalPromptDiv.style.padding = '10px';
+                            originalPromptDiv.style.borderRadius = '4px';
+                            originalPromptDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+                            originalPromptDiv.style.fontSize = '0.9rem';
+                            
+                            const originalPromptLabel = document.createElement('div');
+                            originalPromptLabel.style.fontWeight = 'bold';
+                            originalPromptLabel.style.marginBottom = '5px';
+                            originalPromptLabel.textContent = 'Original Prompt:';
+                            
+                            const originalPromptContent = document.createElement('div');
+                            originalPromptContent.textContent = data.originalPrompt;
+                            
+                            originalPromptDiv.appendChild(originalPromptLabel);
+                            originalPromptDiv.appendChild(originalPromptContent);
+                            
+                            improvedPromptSection.appendChild(originalPromptDiv);
+                        } else {
+                            // Update existing original prompt comparison
+                            const originalPromptContent = originalPromptDiv.querySelector('div:nth-child(2)');
+                            if (originalPromptContent) {
+                                originalPromptContent.textContent = data.originalPrompt;
+                            }
+                        }
+                    }
+                }
             } else {
                 console.log('No valid improved prompt found, using default');
                 improvedPromptText.textContent = 'Please provide a more specific prompt with clear instructions and details.';
