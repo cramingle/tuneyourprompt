@@ -463,7 +463,7 @@ app.post('/api/evaluate', async (req, res) => {
       
       // Set a timeout based on environment - shorter for Vercel
       const controller = new AbortController();
-      const timeoutDuration = IS_VERCEL ? 10000 : 30000; // 10 seconds for Vercel, 30 seconds for local
+      const timeoutDuration = IS_VERCEL ? 25000 : 30000; // 25 seconds for Vercel, 30 seconds for local
       const timeoutId = setTimeout(() => {
         console.log(`API request timed out after ${timeoutDuration/1000} seconds`);
         controller.abort();

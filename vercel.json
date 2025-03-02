@@ -12,7 +12,6 @@
   ],
   "env": {
     "OLLAMA_API_URL": "https://ai.mailbyai.site",
-    "USE_MOCK_DATA": "false",
     "VERCEL": "1"
   }
 } 

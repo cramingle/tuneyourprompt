@@ -38,10 +38,7 @@ Create a `.env` file with the following variables:
 ```
 PORT=3000
 OLLAMA_API_URL=https://ai.mailbyai.site
-USE_MOCK_DATA=false
 ```
-
-Set `USE_MOCK_DATA=true` if you want to use simulated AI responses for testing.
 
 ## Deployment to Vercel
 

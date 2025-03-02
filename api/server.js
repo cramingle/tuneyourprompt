@@ -11,14 +11,12 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'https://ai.mailbyai.site';
-const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true' || false;
 const IS_VERCEL = process.env.VERCEL === '1';
 
 // Log environment on startup
 console.log('Environment:', {
   PORT,
   OLLAMA_API_URL,
-  USE_MOCK_DATA,
   IS_VERCEL
 });
 
@@ -277,39 +275,6 @@ function generateImprovedPrompt(originalPrompt, goal, analysis) {
   return suggestion;
 }
 
-// Generate a mock AI response based on the prompt and goal
-function generateMockResponse(prompt, goal) {
-  // Extract key terms from the goal
-  const goalWords = goal.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-  
-  // Check if the goal mentions specific content types
-  const isStory = goal.toLowerCase().includes('story');
-  const isPoem = goal.toLowerCase().includes('poem');
-  const isFunny = goal.toLowerCase().includes('funny') || goal.toLowerCase().includes('humor');
-  const isPirate = goal.toLowerCase().includes('pirate');
-  
-  let response = '';
-  
-  if (isStory && isPirate) {
-    response = "Captain Redbeard stood at the helm of his ship, the Salty Seadog, gazing out at the horizon. The sea was calm today, too calm for his liking. \"Where's the adventure in smooth sailing?\" he grumbled to his first mate, a parrot named Crackers.\n\n\"Squawk! Boring seas ahead!\" Crackers replied, flapping his colorful wings.";
-    
-    if (isFunny) {
-      response += "\n\nSuddenly, Redbeard spotted something in the distance. \"Man the cannons!\" he shouted, pulling out his spyglass. After a moment of intense squinting, he lowered it with a sigh. \"False alarm, lads. It's just a very large seagull with an attitude problem.\"";
-    }
-  } else if (isPoem) {
-    response = "Whispers of the mind,\nEchoing through endless space,\nThoughts become real things.";
-    
-    if (goalWords.some(word => ['nature', 'ocean', 'sea'].includes(word))) {
-      response = "Ocean waves rolling,\nBlue vastness touching the sky,\nEndless horizon.";
-    }
-  } else {
-    // Generic response that tries to incorporate goal keywords
-    response = `Here's a response about ${goalWords.join(', ')}. The quality of this response depends on how well your prompt was crafted. A good prompt would specify exactly what you want, including tone, style, format, and key details.`;
-  }
-  
-  return response;
-}
-
 // Function to analyze the prompt specifically for the Metis model
 async function analyzePromptForMetis(prompt, goal) {
   try {
@@ -403,78 +368,6 @@ async function analyzePromptForMetis(prompt, goal) {
   }
 }
 
-// Generate mock analysis data
-function generateMockAnalysis(prompt, goal) {
-  // Basic analysis based on prompt length and goal keyword matching
-  const wordCount = prompt.split(/\s+/).length;
-  const goalWords = goal.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-  const matchedKeywords = goalWords.filter(keyword => prompt.toLowerCase().includes(keyword));
-  const relevanceScore = Math.min(100, Math.round((matchedKeywords.length / Math.max(1, goalWords.length)) * 100));
-  
-  // Generate clarity score based on prompt structure
-  let clarityScore = 0;
-  const clarityKeywords = ['tone', 'style', 'format', 'audience', 'purpose', 'voice', 'perspective', 'mood'];
-  const clarityMatches = clarityKeywords.filter(keyword => prompt.toLowerCase().includes(keyword));
-  clarityScore = Math.min(100, clarityMatches.length * 25 + 25);
-  
-  // Generate detail score based on word count
-  let detailScore = 0;
-  if (wordCount >= 30) detailScore = 90;
-  else if (wordCount >= 20) detailScore = 75;
-  else if (wordCount >= 10) detailScore = 50;
-  else detailScore = 25;
-  
-  // Generate feedback based on scores
-  let clarityFeedback, detailFeedback, relevanceFeedback;
-  
-  if (clarityScore >= 75) {
-    clarityFeedback = `Your prompt is very clear and specific.`;
-  } else if (clarityScore >= 50) {
-    clarityFeedback = `Your prompt has decent clarity but could be more specific about what you want.`;
-  } else {
-    clarityFeedback = `Your prompt lacks clarity. Try specifying tone, style, or format.`;
-  }
-  
-  if (detailScore >= 75) {
-    detailFeedback = `Your prompt has good detail with ${wordCount} words.`;
-  } else if (detailScore >= 50) {
-    detailFeedback = `Your prompt has moderate detail but could use more specific information.`;
-  } else {
-    detailFeedback = `Your prompt lacks detail. Try adding more specific information.`;
-  }
-  
-  if (relevanceScore >= 75) {
-    relevanceFeedback = `Your prompt is highly relevant to your goal.`;
-  } else if (relevanceScore >= 50) {
-    relevanceFeedback = `Your prompt is somewhat relevant to your goal but misses some key elements.`;
-  } else {
-    relevanceFeedback = `Your prompt doesn't seem to address your goal well.`;
-  }
-  
-  // Generate improved prompt suggestion
-  let improvedPrompt = prompt;
-  
-  // Add clarity if missing
-  if (clarityScore < 70) {
-    improvedPrompt += ` Please provide this information with a clear, informative tone.`;
-  }
-  
-  // Add relevance if missing
-  if (relevanceScore < 70) {
-    const missingKeywords = goalWords.filter(keyword => !matchedKeywords.includes(keyword));
-    if (missingKeywords.length > 0) {
-      improvedPrompt += ` Make sure to include information about ${missingKeywords.join(', ')}.`;
-    }
-  }
-  
-  return {
-    clarity: { score: clarityScore, feedback: clarityFeedback },
-    detail: { score: detailScore, feedback: detailFeedback },
-    relevance: { score: relevanceScore, feedback: relevanceFeedback },
-    improvedPrompt: improvedPrompt
-  };
-}
-
 // API endpoint to evaluate prompts
 app.post('/api/evaluate', async (req, res) => {
   try {
@@ -487,13 +380,8 @@ app.post('/api/evaluate', async (req, res) => {
     let aiResponse;
     let promptAnalysis = null;
     
-    // Try to call external API or use mock data if specified/needed
+    // Call external API
     try {
-      if (USE_MOCK_DATA) {
-        console.log('Using mock data as specified in environment');
-        throw new Error('Using mock data as specified in environment');
-      }
-      
       // Create a prompt that focuses on general AI interaction rather than email templates
       const enhancedPrompt = `You are a helpful AI assistant. Please respond to the following prompt: ${prompt}`;
       
@@ -501,7 +389,7 @@ app.post('/api/evaluate', async (req, res) => {
       
       // Set a timeout based on environment - shorter for Vercel
       const controller = new AbortController();
-      const timeoutDuration = IS_VERCEL ? 10000 : 30000; // 10 seconds for Vercel, 30 seconds for local
+      const timeoutDuration = IS_VERCEL ? 25000 : 30000; // 25 seconds for Vercel, 30 seconds for local
       const timeoutId = setTimeout(() => {
         console.log(`API request timed out after ${timeoutDuration/1000} seconds`);
         controller.abort();
@@ -527,7 +415,11 @@ app.post('/api/evaluate', async (req, res) => {
       
       if (!apiResponse.ok) {
         console.log(`API responded with status: ${apiResponse.status}`);
-        throw new Error(`API responded with status: ${apiResponse.status}`);
+        return res.status(500).json({ 
+          error: 'API error', 
+          details: `API responded with status: ${apiResponse.status}`,
+          message: 'Failed to get response from AI API. Please try again later.'
+        });
       }
       
       const data = await apiResponse.json();
@@ -562,11 +454,19 @@ app.post('/api/evaluate', async (req, res) => {
             console.log('Successfully extracted text from HTML:', aiResponse.substring(0, 100) + '...');
           } else {
             console.log('Failed to extract meaningful text from HTML');
-            throw new Error('Failed to extract meaningful text from HTML');
+            return res.status(500).json({ 
+              error: 'Content extraction error', 
+              details: 'Failed to extract meaningful text from HTML',
+              message: 'Failed to process AI response. Please try again later.'
+            });
           }
         } else {
           console.log('No content found in email template response');
-          throw new Error('No content found in email template response');
+          return res.status(500).json({ 
+            error: 'Content error', 
+            details: 'No content found in email template response',
+            message: 'Failed to process AI response. Please try again later.'
+          });
         }
       } else if (data.content && data.content.message) {
         console.log('Using message from content');
@@ -575,8 +475,12 @@ app.post('/api/evaluate', async (req, res) => {
         console.log('Using response field');
         aiResponse = data.response;
       } else {
-        console.log('Unexpected API response format, using fallback');
-        throw new Error('Unexpected API response format');
+        console.log('Unexpected API response format');
+        return res.status(500).json({ 
+          error: 'Format error', 
+          details: 'Unexpected API response format',
+          message: 'Failed to process AI response. Please try again later.'
+        });
       }
       
       // If we're not skipping analysis, get the prompt analysis
@@ -585,21 +489,32 @@ app.post('/api/evaluate', async (req, res) => {
           promptAnalysis = await analyzePromptForMetis(prompt, goal);
           console.log('Prompt analysis:', JSON.stringify(promptAnalysis).substring(0, 200) + '...');
         } catch (analysisError) {
-          console.log('Error getting AI analysis, will use fallback:', analysisError.message);
-          // We'll continue and use the fallback analysis
+          console.log('Error getting AI analysis:', analysisError.message);
+          // We'll continue without analysis
+          return res.status(500).json({ 
+            error: 'Analysis error', 
+            details: analysisError.message,
+            message: 'Failed to analyze prompt. Please try again later.'
+          });
         }
       }
       
     } catch (error) {
-      console.log('API error, using mock response:', error.message);
-      // If API is not available or times out, generate a mock response
-      aiResponse = generateMockResponse(prompt, goal);
+      console.log('API error:', error.message);
+      return res.status(500).json({ 
+        error: 'API error', 
+        details: error.message,
+        message: 'Failed to get response from AI API. Please try again later.'
+      });
     }
     
-    // Ensure aiResponse is not undefined before calculating similarity
+    // Ensure aiResponse is not undefined before proceeding
     if (!aiResponse) {
-      console.log('aiResponse is undefined, using mock response');
-      aiResponse = generateMockResponse(prompt, goal);
+      console.log('aiResponse is undefined');
+      return res.status(500).json({ 
+        error: 'Empty response', 
+        message: 'Received empty response from AI API. Please try again later.'
+      });
     }
     
     console.log('Final AI response:', aiResponse.substring(0, 100) + '...');
@@ -614,34 +529,26 @@ app.post('/api/evaluate', async (req, res) => {
     // Calculate match percentage
     const matchPercentage = calculateSimilarity(aiResponse, goal);
     
-    // If we couldn't get AI analysis, fall back to our predefined analysis
-    let qualityAnalysis;
-    let improvedPrompt;
-    
-    if (promptAnalysis && 
-        promptAnalysis.clarity && 
-        promptAnalysis.detail && 
-        promptAnalysis.relevance && 
-        promptAnalysis.improvedPrompt) {
-      // Use the AI-generated analysis
-      qualityAnalysis = {
-        clarity: promptAnalysis.clarity,
-        detail: promptAnalysis.detail,
-        relevance: promptAnalysis.relevance
-      };
-      improvedPrompt = promptAnalysis.improvedPrompt;
-      console.log('Using AI-generated analysis');
-    } else {
-      // Fall back to mock analysis
-      console.log('Falling back to mock analysis');
-      const mockAnalysis = generateMockAnalysis(prompt, goal);
-      qualityAnalysis = {
-        clarity: mockAnalysis.clarity,
-        detail: mockAnalysis.detail,
-        relevance: mockAnalysis.relevance
-      };
-      improvedPrompt = mockAnalysis.improvedPrompt;
+    // Ensure we have valid analysis data
+    if (!promptAnalysis || 
+        !promptAnalysis.clarity || 
+        !promptAnalysis.detail || 
+        !promptAnalysis.relevance || 
+        !promptAnalysis.improvedPrompt) {
+      return res.status(500).json({ 
+        error: 'Analysis error', 
+        message: 'Failed to analyze prompt. Please try again later.'
+      });
     }
+    
+    // Use the AI-generated analysis
+    const qualityAnalysis = {
+      clarity: promptAnalysis.clarity,
+      detail: promptAnalysis.detail,
+      relevance: promptAnalysis.relevance
+    };
+    const improvedPrompt = promptAnalysis.improvedPrompt;
+    console.log('Using AI-generated analysis');
     
     // Return evaluation results
     res.json({
@@ -670,7 +577,6 @@ app.get('/api/health', (req, res) => {
     console.log('Running on Vercel, using simplified health check');
     
     // For Vercel deployments, we'll just return a success response
-    // and set ollama to connected so the client doesn't show mock data warnings
     return res.json({ 
       status: 'ok', 
       ollama: 'connected',
@@ -687,7 +593,7 @@ app.get('/api/health', (req, res) => {
   const timeoutId = setTimeout(() => {
     console.log('Health check timeout triggered');
     controller.abort();
-  }, 10000); // 10 second timeout for health checks
+  }, 30000); // 30 second timeout for health checks
   
   fetch(`${OLLAMA_API_URL}/ai/chat`, {
     method: 'POST',
@@ -716,21 +622,21 @@ app.get('/api/health', (req, res) => {
             return res.json({ status: 'ok', ollama: 'connected' });
           } else {
             console.log('Health check warning: Invalid response format');
-            return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', reason: 'Invalid response format' });
+            return res.json({ status: 'error', reason: 'Invalid response format' });
           }
         } catch (error) {
           console.log('Health check error: Failed to parse response', error.message);
-          return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', error: 'Failed to parse response' });
+          return res.json({ status: 'error', error: 'Failed to parse response' });
         }
       } else {
         console.log('Health check error: API responded with status', response.status);
-        return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', statusCode: response.status });
+        return res.json({ status: 'error', statusCode: response.status });
       }
     })
     .catch(error => {
       clearTimeout(timeoutId);
       console.log('Health check error:', error.message);
-      return res.json({ status: 'ok', ollama: 'unavailable', mock: 'enabled', error: error.message });
+      return res.json({ status: 'error', error: error.message });
     });
 });
 
@@ -743,5 +649,4 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`AI API URL: ${OLLAMA_API_URL}`);
-  console.log(`Mock data: ${USE_MOCK_DATA ? 'enabled' : 'auto (when AI API unavailable)'}`);
 }); 
