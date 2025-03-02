@@ -46,24 +46,37 @@ function calculateSimilarity(text1, text2) {
   return Math.round((similarity + 1) / 2 * 100);
 }
 
-// Analyze prompt quality
+// Helper function to analyze prompt quality
 async function analyzePromptQuality(prompt, goal) {
   try {
     // First try to use AI for analysis
     const analysisPrompt = `
-    Analyze this AI prompt: "${prompt}"
+    Analyze the quality of this prompt:
+    
+    Prompt: "${prompt}"
     Goal: "${goal}"
     
-    Provide a detailed analysis with scores (0-100) and feedback for:
-    1. Clarity: Does it specify tone, style, format, audience, or purpose?
-    2. Detail: Is it specific and detailed enough?
-    3. Relevance: Does it align with the stated goal?
+    Evaluate the prompt on these criteria:
+    1. Clarity: Is the prompt clear and specific about what it's asking for?
+    2. Detail: Does the prompt provide enough detail and context?
+    3. Relevance: Does the prompt align with the stated goal?
     
-    Format your response as JSON:
+    For each criterion, provide a score from 0-100 and specific feedback.
+    
+    Return your analysis in this JSON format:
     {
-      "clarity": {"score": number, "feedback": "string"},
-      "detail": {"score": number, "feedback": "string"},
-      "relevance": {"score": number, "feedback": "string"}
+      "clarity": {
+        "score": <number>,
+        "feedback": "<specific feedback>"
+      },
+      "detail": {
+        "score": <number>,
+        "feedback": "<specific feedback>"
+      },
+      "relevance": {
+        "score": <number>,
+        "feedback": "<specific feedback>"
+      }
     }
     `;
     
@@ -112,11 +125,17 @@ async function analyzePromptQuality(prompt, goal) {
           if (analysisData.clarity && analysisData.detail && analysisData.relevance) {
             console.log('Successfully parsed AI analysis');
             return analysisData;
+          } else {
+            console.log('AI analysis missing required fields, falling back to rule-based');
           }
+        } else {
+          console.log('No JSON found in AI response, falling back to rule-based');
         }
       } catch (jsonError) {
         console.log('Failed to parse JSON from AI response:', jsonError);
       }
+    } else {
+      console.log(`API responded with status: ${apiResponse.status}, falling back to rule-based analysis`);
     }
     
     // If AI analysis fails, fall back to rule-based analysis
@@ -135,27 +154,73 @@ async function analyzePromptQuality(prompt, goal) {
   // Check clarity
   const clarityKeywords = ['tone', 'style', 'format', 'audience', 'purpose'];
   const hasClarity = clarityKeywords.some(keyword => prompt.toLowerCase().includes(keyword));
-  analysis.clarity.score = hasClarity ? 100 : 50;
-  analysis.clarity.feedback = hasClarity 
-    ? 'Good job specifying tone/style in your prompt!' 
-    : 'Consider specifying tone, style, or format in your prompt.';
+  const promptEndsWithQuestion = prompt.trim().endsWith('?');
+  const hasInstructionWords = /please|create|write|generate|make/i.test(prompt);
+  
+  if (hasClarity && hasInstructionWords) {
+    analysis.clarity.score = 90;
+    analysis.clarity.feedback = 'Excellent clarity! Your prompt clearly specifies what you want.';
+  } else if (hasClarity || hasInstructionWords) {
+    analysis.clarity.score = 70;
+    analysis.clarity.feedback = 'Good clarity, but consider being more specific about what you want.';
+  } else if (promptEndsWithQuestion) {
+    analysis.clarity.score = 50;
+    analysis.clarity.feedback = 'Your prompt is a question, which may lead to explanations rather than the content you want. Try using direct instructions.';
+  } else {
+    analysis.clarity.score = 30;
+    analysis.clarity.feedback = 'Your prompt lacks clarity. Consider specifying tone, style, format, audience, or purpose.';
+  }
   
   // Check detail
   const wordCount = prompt.split(/\s+/).length;
-  analysis.detail.score = wordCount > 10 ? 100 : wordCount > 5 ? 70 : 40;
-  analysis.detail.feedback = wordCount > 10 
-    ? 'Your prompt has good detail!' 
-    : 'Try adding more specific details to your prompt.';
+  const sentenceCount = prompt.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+  const hasExamples = prompt.includes('example') || prompt.includes('like') || prompt.includes('such as');
+  
+  if (wordCount > 20 && hasExamples) {
+    analysis.detail.score = 90;
+    analysis.detail.feedback = 'Excellent level of detail with helpful examples!';
+  } else if (wordCount > 15) {
+    analysis.detail.score = 80;
+    analysis.detail.feedback = 'Good level of detail. Consider adding examples for even better results.';
+  } else if (wordCount > 10) {
+    analysis.detail.score = 60;
+    analysis.detail.feedback = 'Moderate detail. Adding more specific requirements would improve results.';
+  } else if (sentenceCount > 1) {
+    analysis.detail.score = 40;
+    analysis.detail.feedback = 'Limited detail. Try expanding your prompt with more specific instructions.';
+  } else {
+    analysis.detail.score = 20;
+    analysis.detail.feedback = 'Very limited detail. Short prompts often lead to generic responses.';
+  }
   
   // Check relevance
   const goalKeywords = goal.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-  const promptContainsGoalKeywords = goalKeywords.some(keyword => 
-    prompt.toLowerCase().includes(keyword)
-  );
-  analysis.relevance.score = promptContainsGoalKeywords ? 100 : 50;
-  analysis.relevance.feedback = promptContainsGoalKeywords 
-    ? 'Your prompt aligns well with your goal!' 
-    : 'Make sure your prompt includes key elements from your goal.';
+  const promptLower = prompt.toLowerCase();
+  const matchingKeywords = goalKeywords.filter(keyword => promptLower.includes(keyword));
+  const relevanceScore = Math.round((matchingKeywords.length / Math.max(1, goalKeywords.length)) * 100);
+  
+  if (relevanceScore > 80) {
+    analysis.relevance.score = 90;
+    analysis.relevance.feedback = 'Excellent alignment with your goal!';
+  } else if (relevanceScore > 60) {
+    analysis.relevance.score = 75;
+    analysis.relevance.feedback = 'Good alignment with your goal, but some key elements might be missing.';
+  } else if (relevanceScore > 40) {
+    analysis.relevance.score = 60;
+    analysis.relevance.feedback = 'Moderate alignment with your goal. Consider including more key elements from your goal.';
+  } else if (relevanceScore > 20) {
+    analysis.relevance.score = 40;
+    analysis.relevance.feedback = 'Limited alignment with your goal. Your prompt is missing many key elements from your goal.';
+  } else {
+    analysis.relevance.score = 20;
+    analysis.relevance.feedback = 'Poor alignment with your goal. Your prompt seems unrelated to what you want to achieve.';
+  }
+  
+  console.log('Rule-based analysis scores:', {
+    clarity: analysis.clarity.score,
+    detail: analysis.detail.score,
+    relevance: analysis.relevance.score
+  });
   
   return analysis;
 }
@@ -210,7 +275,11 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis) {
       if (improvedText && improvedText.trim()) {
         console.log('Successfully generated AI improved prompt');
         return improvedText.trim();
+      } else {
+        console.log('AI returned empty improved prompt, falling back to rule-based improvement');
       }
+    } else {
+      console.log(`API responded with status: ${apiResponse.status}, falling back to rule-based improvement`);
     }
     
     // If AI improvement fails, fall back to rule-based improvement
@@ -221,20 +290,27 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis) {
   
   // Fallback to rule-based improvement
   let suggestion = originalPrompt;
+  let improvements = [];
   
-  // Add clarity if missing
+  // Add clarity improvements if needed
   if (analysis.clarity.score < 70) {
-    const goalWords = goal.toLowerCase().split(/\s+/);
-    if (goalWords.includes('funny') && !suggestion.toLowerCase().includes('funny')) {
-      suggestion = suggestion.replace(/\.$/, '') + ' with a humorous tone.';
-    } else if (goalWords.includes('detailed') && !suggestion.toLowerCase().includes('detail')) {
-      suggestion = suggestion.replace(/\.$/, '') + ' with detailed descriptions.';
-    } else {
-      suggestion = suggestion.replace(/\.$/, '') + ' Be specific and clear.';
+    if (goal.toLowerCase().includes('funny') && !suggestion.toLowerCase().includes('humor') && !suggestion.toLowerCase().includes('funny')) {
+      improvements.push('add humor');
+      suggestion = suggestion.replace(/\.$/, '') + ' Make it humorous and entertaining.';
+    } 
+    
+    if (goal.toLowerCase().includes('detailed') && !suggestion.toLowerCase().includes('detail')) {
+      improvements.push('add details');
+      suggestion = suggestion.replace(/\.$/, '') + ' Include specific details and vivid descriptions.';
+    }
+    
+    if (!suggestion.toLowerCase().includes('tone') && !suggestion.toLowerCase().includes('style')) {
+      improvements.push('specify tone');
+      suggestion = suggestion.replace(/\.$/, '') + ' Use a clear and professional tone.';
     }
   }
   
-  // Add relevance if missing
+  // Add relevance improvements if needed
   if (analysis.relevance.score < 70) {
     const goalKeywords = goal.toLowerCase().split(/\s+/).filter(word => word.length > 3);
     const missingKeywords = goalKeywords.filter(keyword => 
@@ -242,9 +318,26 @@ async function generateImprovedPrompt(originalPrompt, goal, analysis) {
     );
     
     if (missingKeywords.length > 0) {
+      improvements.push('include key elements from goal');
       suggestion = suggestion.replace(/\.$/, '') + 
         ` Include these key elements: ${missingKeywords.join(', ')}.`;
     }
+  }
+  
+  // Add detail improvements if needed
+  if (analysis.detail.score < 70) {
+    const wordCount = suggestion.split(/\s+/).length;
+    if (wordCount < 15) {
+      improvements.push('add more detail');
+      suggestion = suggestion.replace(/\.$/, '') + ' Provide more specific instructions and context.';
+    }
+  }
+  
+  // Log the improvements made
+  if (improvements.length > 0) {
+    console.log('Rule-based improvements made:', improvements.join(', '));
+  } else {
+    console.log('No rule-based improvements needed, original prompt was good');
   }
   
   return suggestion;
