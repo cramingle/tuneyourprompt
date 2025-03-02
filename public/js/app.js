@@ -233,7 +233,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadingOverlay.style.display = 'none';
                 
                 // Add AI response message with typing animation
-                addMessage('ai', data.aiResponse, '', true);
+                if (data.aiResponse) {
+                    addMessage('ai', data.aiResponse, '', true);
+                } else {
+                    addMessage('ai', 'Sorry, I couldn\'t generate a response. Please try again.', '', true);
+                }
                 
                 // Store the analysis data for later use
                 window.currentAnalysisData = data.analysis;

@@ -288,6 +288,125 @@ app.post('/api/evaluate', async (req, res) => {
   }
 });
 
+// API endpoint to generate responses with a specific prompt
+app.post('/api/generate', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+    
+    let response;
+    
+    // Try to call external API or use mock data if specified/needed
+    try {
+      if (USE_MOCK_DATA) {
+        throw new Error('Using mock data as specified in environment');
+      }
+      
+      // Create a prompt that focuses on general AI interaction
+      const enhancedPrompt = `You are a helpful AI assistant. Please respond to the following prompt: ${prompt}`;
+      
+      console.log('Sending prompt to API:', enhancedPrompt);
+      
+      // Set a timeout based on environment - shorter for Vercel
+      const controller = new AbortController();
+      const timeoutDuration = IS_VERCEL ? 10000 : 30000; // 10 seconds for Vercel, 30 seconds for local
+      const timeoutId = setTimeout(() => {
+        console.log(`API request timed out after ${timeoutDuration/1000} seconds`);
+        controller.abort();
+      }, timeoutDuration);
+      
+      console.log(`Setting API timeout to ${timeoutDuration/1000} seconds`);
+      
+      const apiResponse = await fetch(`${OLLAMA_API_URL}/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'metis',
+          prompt: enhancedPrompt,
+          stream: false
+        }),
+        signal: controller.signal
+      });
+      
+      // Clear the timeout
+      clearTimeout(timeoutId);
+      
+      if (!apiResponse.ok) {
+        console.log(`API responded with status: ${apiResponse.status}`);
+        throw new Error(`API responded with status: ${apiResponse.status}`);
+      }
+      
+      const data = await apiResponse.json();
+      console.log('API response:', JSON.stringify(data).substring(0, 200) + '...');
+      
+      // Extract the content based on the response type
+      if (data.type === 'text' && data.content) {
+        console.log('Using text content');
+        response = data.content;
+      } else if (data.type === 'email_template') {
+        if (data.content && data.content.message && data.content.message.trim()) {
+          console.log('Using message from email template');
+          response = data.content.message;
+        } else if (data.content && data.content.html) {
+          console.log('Extracting text from HTML');
+          // Extract text from HTML
+          const htmlContent = data.content.html;
+          // Extract text from between <p> tags
+          const paragraphs = htmlContent.match(/<p>(.*?)<\/p>/g);
+          if (paragraphs && paragraphs.length > 0) {
+            // Remove HTML tags and join paragraphs with newlines
+            response = paragraphs
+              .map(p => p.replace(/<\/?p>/g, ''))
+              .join('\n');
+          } else {
+            // Fallback: strip all HTML tags
+            response = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+          }
+        } else {
+          console.log('No content found in email template response');
+          throw new Error('No content found in email template response');
+        }
+      } else if (data.content && data.content.message) {
+        console.log('Using message from content');
+        response = data.content.message;
+      } else if (data.response) {
+        console.log('Using response field');
+        response = data.response;
+      } else {
+        console.log('Unexpected API response format, using fallback');
+        throw new Error('Unexpected API response format');
+      }
+      
+    } catch (error) {
+      console.log('API error, using mock response:', error.message);
+      // If API is not available or times out, generate a mock response
+      response = generateMockResponse(prompt, "");
+    }
+    
+    // Ensure response is not undefined
+    if (!response) {
+      console.log('Response is undefined, using mock response');
+      response = generateMockResponse(prompt, "");
+    }
+    
+    console.log('Final response:', response.substring(0, 100) + '...');
+    
+    // Return the response
+    res.json({
+      response
+    });
+    
+  } catch (error) {
+    console.error('Error generating response:', error);
+    res.status(500).json({ error: 'Failed to generate response', details: error.message });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   // Set a shorter timeout for health checks to avoid Vercel timeouts
