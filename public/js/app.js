@@ -220,31 +220,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Add AI response message with typing animation
                 addMessage('ai', data.aiResponse, '', true);
                 
+                // Store the analysis data for later use
+                window.currentAnalysisData = data.analysis;
+                
                 // Move to step 3 (Result)
                 updateProgress(3);
                 
-                // Add analyze button to the chat
-                setTimeout(() => {
-                    const analyzeBtn = document.createElement('button');
-                    analyzeBtn.className = 'analyze-button';
-                    analyzeBtn.innerHTML = '<i class="fas fa-chart-line fa-xs"></i> ANALYZE THIS PROMPT';
-                    analyzeBtn.addEventListener('click', () => {
-                        // Update analysis panel with the data
-                        updateAnalysisPanel(data.analysis);
-                        
-                        // Show analysis panel
-                        analysisPanel.classList.remove('hidden');
-                        
-                        // Move to step 4 (Analyze)
-                        updateProgress(4);
-                    });
+                // Add analyze button to the try-again-area
+                const analyzeBtn = document.createElement('button');
+                analyzeBtn.className = 'analyze-button';
+                analyzeBtn.innerHTML = '<i class="fas fa-chart-line fa-xs"></i> ANALYZE THIS PROMPT';
+                analyzeBtn.id = 'analyze-prompt-btn';
+                analyzeBtn.addEventListener('click', () => {
+                    // Update analysis panel with the data
+                    updateAnalysisPanel(window.currentAnalysisData);
                     
-                    const buttonContainer = document.createElement('div');
-                    buttonContainer.className = 'button-container';
-                    buttonContainer.appendChild(analyzeBtn);
+                    // Show analysis panel
+                    analysisPanel.classList.remove('hidden');
                     
-                    addMessage('system', buttonContainer);
-                }, 1000);
+                    // Move to step 4 (Analyze)
+                    updateProgress(4);
+                });
+                
+                // Clear the try-again-area and add the analyze button
+                const tryAgainArea = document.getElementById('try-again-area');
+                tryAgainArea.innerHTML = '';
+                
+                const buttonRow = document.createElement('div');
+                buttonRow.className = 'button-row';
+                buttonRow.appendChild(analyzeBtn);
+                
+                tryAgainArea.appendChild(buttonRow);
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -300,51 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Start the evaluation process
         attemptEvaluation();
-    });
-    
-    tryAgainBtn.addEventListener('click', () => {
-        // Clear the prompt input
-        promptInput.value = '';
-        
-        // Add system message
-        addMessage('system', '<i class="fas fa-redo fa-xs"></i> Let\'s try another prompt for the same goal.');
-        
-        // Hide panels if they're open
-        analysisPanel.classList.add('hidden');
-        finalResultPanel.classList.add('hidden');
-        
-        // Move back to step 2
-        updateProgress(2);
-        
-        // Focus on prompt input
-        promptInput.focus();
-    });
-    
-    startOverBtn.addEventListener('click', () => {
-        // Confirm before starting over
-        if (confirm('Are you sure you want to start over with a new goal?')) {
-            // Clear inputs
-            goalInput.value = '';
-            promptInput.value = '';
-            
-            // Hide panels if they're open
-            analysisPanel.classList.add('hidden');
-            finalResultPanel.classList.add('hidden');
-            
-            // Clear chat messages except the first welcome message
-            while (chatMessages.children.length > 1) {
-                chatMessages.removeChild(chatMessages.lastChild);
-            }
-            
-            // Add system message
-            addMessage('system', '<i class="fas fa-sync fa-xs"></i> Let\'s start over with a new goal.');
-            
-            // Move back to step 1
-            updateProgress(1);
-            
-            // Focus on goal input
-            goalInput.focus();
-        }
     });
     
     // Handle textarea auto-resize
@@ -620,6 +581,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Move to step 5 (Final Result)
                 updateProgress(5);
+                
+                // Add Try Again and Start Over buttons to the try-again-area
+                const tryAgainArea = document.getElementById('try-again-area');
+                tryAgainArea.innerHTML = '';
+                
+                const buttonRow = document.createElement('div');
+                buttonRow.className = 'button-row';
+                
+                // Create Try Again button
+                const tryAgainBtn = document.createElement('button');
+                tryAgainBtn.className = 'try-again-button';
+                tryAgainBtn.innerHTML = '<i class="fas fa-redo fa-xs"></i> TRY AGAIN';
+                tryAgainBtn.addEventListener('click', () => {
+                    // Clear the prompt input
+                    promptInput.value = '';
+                    
+                    // Add system message
+                    addMessage('system', '<i class="fas fa-redo fa-xs"></i> Let\'s try another prompt for the same goal.');
+                    
+                    // Hide panels if they're open
+                    analysisPanel.classList.add('hidden');
+                    finalResultPanel.classList.add('hidden');
+                    
+                    // Move back to step 2
+                    updateProgress(2);
+                    
+                    // Focus on prompt input
+                    promptInput.focus();
+                });
+                
+                // Create Start Over button
+                const startOverBtn = document.createElement('button');
+                startOverBtn.className = 'start-over-button';
+                startOverBtn.innerHTML = '<i class="fas fa-sync fa-xs"></i> START OVER';
+                startOverBtn.addEventListener('click', () => {
+                    // Confirm before starting over
+                    if (confirm('Are you sure you want to start over with a new goal?')) {
+                        // Clear inputs
+                        goalInput.value = '';
+                        promptInput.value = '';
+                        
+                        // Hide panels if they're open
+                        analysisPanel.classList.add('hidden');
+                        finalResultPanel.classList.add('hidden');
+                        
+                        // Clear chat messages except the first welcome message
+                        while (chatMessages.children.length > 1) {
+                            chatMessages.removeChild(chatMessages.lastChild);
+                        }
+                        
+                        // Add system message
+                        addMessage('system', '<i class="fas fa-sync fa-xs"></i> Let\'s start over with a new goal.');
+                        
+                        // Move back to step 1
+                        updateProgress(1);
+                        
+                        // Focus on goal input
+                        goalInput.focus();
+                    }
+                });
+                
+                // Add buttons to the row
+                buttonRow.appendChild(tryAgainBtn);
+                buttonRow.appendChild(startOverBtn);
+                
+                // Add the row to the try-again-area
+                tryAgainArea.appendChild(buttonRow);
                 
             } catch (error) {
                 console.error('Error getting final result:', error);

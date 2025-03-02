@@ -490,6 +490,7 @@ app.post('/api/evaluate', async (req, res) => {
     // Try to call external API or use mock data if specified/needed
     try {
       if (USE_MOCK_DATA) {
+        console.log('Using mock data as specified in environment');
         throw new Error('Using mock data as specified in environment');
       }
       
@@ -578,18 +579,14 @@ app.post('/api/evaluate', async (req, res) => {
         throw new Error('Unexpected API response format');
       }
       
-      // Now get AI analysis of the prompt if not skipped
+      // If we're not skipping analysis, get the prompt analysis
       if (!skipAnalysis) {
         try {
-          console.log('Getting AI analysis of prompt...');
           promptAnalysis = await analyzePromptForMetis(prompt, goal);
-          if (promptAnalysis) {
-            console.log('AI analysis successful');
-          } else {
-            console.log('AI analysis returned null, will use fallback analysis');
-          }
+          console.log('Prompt analysis:', JSON.stringify(promptAnalysis).substring(0, 200) + '...');
         } catch (analysisError) {
-          console.error('Error getting AI analysis:', analysisError);
+          console.log('Error getting AI analysis, will use fallback:', analysisError.message);
+          // We'll continue and use the fallback analysis
         }
       }
       
@@ -649,17 +646,18 @@ app.post('/api/evaluate', async (req, res) => {
     // Return evaluation results
     res.json({
       aiResponse,
+      matchPercentage,
       analysis: {
         clarity: qualityAnalysis.clarity,
         detail: qualityAnalysis.detail,
         relevance: qualityAnalysis.relevance,
-        improvedPrompt
+        improvedPrompt: improvedPrompt
       }
     });
     
   } catch (error) {
-    console.error('Error in /api/evaluate:', error);
-    res.status(500).json({ error: 'An error occurred during evaluation' });
+    console.error('Error evaluating prompt:', error);
+    res.status(500).json({ error: 'Failed to evaluate prompt', details: error.message });
   }
 });
 
