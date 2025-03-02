@@ -1432,6 +1432,7 @@ footer a:hover {
 button .feather {
   margin-right: 4px;
   stroke: currentColor;
+  fill: none !important;
 }
 
 button.icon-only .feather {
@@ -1445,6 +1446,22 @@ svg[data-feather] {
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* Specific button icon overrides */
+.analyze-button .feather,
+.try-again-button .feather,
+.start-over-button .feather,
+.continue-chat-button .feather,
+.send-button .feather {
+  stroke: currentColor;
+  fill: none !important;
+}
+
+/* System message icons */
+.system-message .feather {
+  stroke: var(--light-text);
+  fill: none !important;
 }
 
 .continue-chat-button {

@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     chatInputArea.innerHTML = `
                         <div class="input-container">
                             <textarea id="continue-chat-input" placeholder="Continue the conversation..."></textarea>
-                            <button class="send-button" id="send-chat-btn" title="Send Message">
+                            <button class="send-button" id="goal-next" title="Send Message">
                                 <i data-feather="send" class="feather"></i>
                             </button>
                         </div>
