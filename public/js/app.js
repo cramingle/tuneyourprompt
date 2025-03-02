@@ -201,8 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Add feedback message after a short delay
                 setTimeout(() => {
-                    const feedbackElement = createFeedbackElement(data);
-                    addMessage('system', feedbackElement, 'feedback-message');
+                    // Update analysis panel instead of creating feedback element
+                    updateAnalysisPanel(data.analysis);
                     
                     // Move to step 3
                     updateProgress(3);
