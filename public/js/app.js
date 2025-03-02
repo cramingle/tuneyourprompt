@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const startOverBtn = document.getElementById('start-over');
     
     const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingMessage = document.getElementById('loading-message');
     
     // Current step tracking
     let currentStep = 1;
@@ -79,130 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.scrollTop = chatMessages.scrollHeight;
         
         return messageDiv;
-    }
-    
-    // Helper function to create feedback element
-    function createFeedbackElement(data) {
-        const feedbackContainer = document.createElement('div');
-        feedbackContainer.className = 'feedback-container';
-        
-        // Header with match score
-        const feedbackHeader = document.createElement('div');
-        feedbackHeader.className = 'feedback-header';
-        
-        const feedbackTitle = document.createElement('div');
-        feedbackTitle.className = 'feedback-title';
-        feedbackTitle.textContent = 'Prompt Analysis';
-        
-        const matchScore = document.createElement('div');
-        matchScore.className = 'match-score';
-        matchScore.textContent = `${data.matchPercentage}% Match`;
-        
-        // Set color based on score
-        if (data.matchPercentage >= 80) {
-            matchScore.style.backgroundColor = 'var(--success-color)';
-        } else if (data.matchPercentage >= 50) {
-            matchScore.style.backgroundColor = 'var(--warning-color)';
-        } else {
-            matchScore.style.backgroundColor = 'var(--error-color)';
-        }
-        
-        feedbackHeader.appendChild(feedbackTitle);
-        feedbackHeader.appendChild(matchScore);
-        feedbackContainer.appendChild(feedbackHeader);
-        
-        // Feedback categories
-        const feedbackCategories = document.createElement('div');
-        feedbackCategories.className = 'feedback-categories';
-        
-        // Clarity
-        const clarityCategory = createFeedbackCategory(
-            'Clarity', 
-            data.qualityAnalysis.clarity.score, 
-            data.qualityAnalysis.clarity.feedback
-        );
-        feedbackCategories.appendChild(clarityCategory);
-        
-        // Detail
-        const detailCategory = createFeedbackCategory(
-            'Detail', 
-            data.qualityAnalysis.detail.score, 
-            data.qualityAnalysis.detail.feedback
-        );
-        feedbackCategories.appendChild(detailCategory);
-        
-        // Relevance
-        const relevanceCategory = createFeedbackCategory(
-            'Relevance', 
-            data.qualityAnalysis.relevance.score, 
-            data.qualityAnalysis.relevance.feedback
-        );
-        feedbackCategories.appendChild(relevanceCategory);
-        
-        feedbackContainer.appendChild(feedbackCategories);
-        
-        // Suggestion
-        const suggestionContainer = document.createElement('div');
-        suggestionContainer.className = 'suggestion-container';
-        
-        const suggestionTitle = document.createElement('div');
-        suggestionTitle.className = 'suggestion-title';
-        suggestionTitle.textContent = 'Try this improved prompt:';
-        
-        const suggestionText = document.createElement('div');
-        suggestionText.className = 'suggestion-text';
-        suggestionText.textContent = data.improvedPrompt;
-        
-        suggestionContainer.appendChild(suggestionTitle);
-        suggestionContainer.appendChild(suggestionText);
-        feedbackContainer.appendChild(suggestionContainer);
-        
-        // Add mock data notice if Ollama is not available
-        if (!ollamaAvailable) {
-            const mockNotice = document.createElement('div');
-            mockNotice.className = 'mock-notice';
-            mockNotice.innerHTML = '<p><strong>Note:</strong> Using simulated AI responses because the AI API is not available.</p>';
-            feedbackContainer.appendChild(mockNotice);
-        }
-        
-        return feedbackContainer;
-    }
-    
-    // Helper function to create a feedback category
-    function createFeedbackCategory(name, score, feedback) {
-        const category = document.createElement('div');
-        category.className = 'feedback-category';
-        
-        const header = document.createElement('div');
-        header.className = 'category-header';
-        
-        const categoryName = document.createElement('div');
-        categoryName.className = 'category-name';
-        categoryName.textContent = name;
-        
-        const scoreBar = document.createElement('div');
-        scoreBar.className = 'score-bar';
-        
-        const scoreBarFill = document.createElement('div');
-        scoreBarFill.className = 'score-bar-fill';
-        // Set width after a small delay for animation
-        setTimeout(() => {
-            scoreBarFill.style.width = `${score}%`;
-        }, 100);
-        
-        scoreBar.appendChild(scoreBarFill);
-        
-        header.appendChild(categoryName);
-        header.appendChild(scoreBar);
-        
-        const feedbackText = document.createElement('div');
-        feedbackText.className = 'category-feedback';
-        feedbackText.textContent = feedback;
-        
-        category.appendChild(header);
-        category.appendChild(feedbackText);
-        
-        return category;
     }
     
     // Update progress bar and indicators
@@ -495,4 +372,147 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // Add these new functions before the existing evaluatePrompt function
+    function updateAnalysisPanel(analysis) {
+        const analysisPanel = document.getElementById('analysis-panel');
+        const matchValue = document.getElementById('match-value');
+        const matchBarFill = document.getElementById('match-bar-fill');
+        
+        // Update match score
+        const overallScore = Math.round((analysis.clarity.score + analysis.detail.score + analysis.relevance.score) / 3);
+        matchValue.textContent = `${overallScore}%`;
+        matchBarFill.style.width = `${overallScore}%`;
+        
+        // Update color based on score
+        if (overallScore >= 75) {
+            matchBarFill.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
+        } else if (overallScore >= 50) {
+            matchBarFill.style.background = 'linear-gradient(90deg, #FFC107, #FFEB3B)';
+        } else {
+            matchBarFill.style.background = 'linear-gradient(90deg, #F44336, #FF9800)';
+        }
+        
+        // Update clarity
+        document.getElementById('clarity-score').textContent = analysis.clarity.score;
+        document.getElementById('clarity-bar').style.width = `${analysis.clarity.score}%`;
+        document.getElementById('clarity-feedback').textContent = analysis.clarity.feedback;
+        
+        // Update detail
+        document.getElementById('detail-score').textContent = analysis.detail.score;
+        document.getElementById('detail-bar').style.width = `${analysis.detail.score}%`;
+        document.getElementById('detail-feedback').textContent = analysis.detail.feedback;
+        
+        // Update relevance
+        document.getElementById('relevance-score').textContent = analysis.relevance.score;
+        document.getElementById('relevance-bar').style.width = `${analysis.relevance.score}%`;
+        document.getElementById('relevance-feedback').textContent = analysis.relevance.feedback;
+        
+        // Update improved prompt
+        document.getElementById('improved-prompt-text').textContent = analysis.improvedPrompt;
+        
+        // Show the panel
+        analysisPanel.classList.remove('hidden');
+    }
+
+    // Replace the existing evaluatePrompt function with this updated version
+    async function evaluatePrompt(prompt, goal) {
+        let retryCount = 0;
+        const maxRetries = 2;
+        const retryDelay = 2000;
+        
+        function setLoadingMessage() {
+            loadingOverlay.classList.add('active');
+            loadingMessage.textContent = 'Analyzing your prompt...';
+        }
+        
+        setLoadingMessage();
+        
+        async function attemptEvaluation() {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Request timed out')), 30000);
+            });
+            
+            try {
+                const response = await Promise.race([
+                    fetch('/api/evaluate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ prompt, goal }),
+                        signal: controller.signal
+                    }),
+                    timeoutPromise
+                ]);
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Add AI response to chat
+                    addMessage('ai', data.aiResponse);
+                    
+                    // Update analysis panel instead of adding feedback to chat
+                    updateAnalysisPanel(data.analysis);
+                    
+                    // Update progress after a delay
+                    setTimeout(() => {
+                        updateProgress(3);
+                    }, 500);
+                } else {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Evaluation error:', error);
+                
+                if (error.name === 'AbortError' || error.message === 'Request timed out') {
+                    if (retryCount < maxRetries) {
+                        retryCount++;
+                        console.log(`Retry attempt ${retryCount}...`);
+                        loadingMessage.textContent = `Request timed out. Retrying (${retryCount}/${maxRetries})...`;
+                        await new Promise(resolve => setTimeout(resolve, retryDelay));
+                        return attemptEvaluation();
+                    } else {
+                        addMessage('system', 'The request timed out. Please try again later.');
+                    }
+                } else {
+                    addMessage('system', 'There was an error evaluating your prompt. Please try again.');
+                }
+                
+                updateProgress(3);
+            } finally {
+                loadingOverlay.classList.remove('active');
+            }
+        }
+        
+        await attemptEvaluation();
+    }
+
+    // Add event listeners for the analysis panel
+    const closeAnalysisBtn = document.getElementById('close-analysis');
+    if (closeAnalysisBtn) {
+        closeAnalysisBtn.addEventListener('click', function() {
+            document.getElementById('analysis-panel').classList.add('hidden');
+        });
+    }
+    
+    // Add event listener for "Use This Prompt" button
+    const useImprovedPromptBtn = document.getElementById('use-improved-prompt');
+    if (useImprovedPromptBtn) {
+        useImprovedPromptBtn.addEventListener('click', function() {
+            const improvedPrompt = document.getElementById('improved-prompt-text').textContent;
+            const promptInput = document.getElementById('prompt-input');
+            promptInput.value = improvedPrompt;
+            
+            // Hide the analysis panel
+            document.getElementById('analysis-panel').classList.add('hidden');
+            
+            // Focus on the prompt input
+            promptInput.focus();
+        });
+    }
 }); 

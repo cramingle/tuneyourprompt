@@ -21,7 +21,6 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#7C4DFF">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <!-- Open Graph / Facebook -->
@@ -38,13 +37,15 @@
     <meta property="twitter:description" content="A mobile-optimized tool to help you craft better AI prompts and improve your results">
     <meta property="twitter:image" content="https://tuneyourprompt.vercel.app/img/og-image.jpg">
     
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="app-container">
@@ -110,6 +111,59 @@
                 </div>
             </div>
         </main>
+
+        <div class="analysis-panel hidden" id="analysis-panel">
+            <div class="analysis-header">
+                <div class="analysis-title">PROMPT ANALYSIS</div>
+                <button class="close-analysis" id="close-analysis"><i class="fas fa-times fa-xs"></i></button>
+            </div>
+            <div class="match-indicator">
+                <div class="match-label">MATCH</div>
+                <div class="match-value" id="match-value">0%</div>
+                <div class="match-bar">
+                    <div class="match-bar-fill" id="match-bar-fill"></div>
+                </div>
+            </div>
+            <div class="analysis-metrics">
+                <div class="metric">
+                    <div class="metric-header">
+                        <div class="metric-name">CLARITY</div>
+                        <div class="metric-score" id="clarity-score">0</div>
+                    </div>
+                    <div class="metric-bar">
+                        <div class="metric-bar-fill" id="clarity-bar"></div>
+                    </div>
+                    <div class="metric-feedback" id="clarity-feedback">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-header">
+                        <div class="metric-name">DETAIL</div>
+                        <div class="metric-score" id="detail-score">0</div>
+                    </div>
+                    <div class="metric-bar">
+                        <div class="metric-bar-fill" id="detail-bar"></div>
+                    </div>
+                    <div class="metric-feedback" id="detail-feedback">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-header">
+                        <div class="metric-name">RELEVANCE</div>
+                        <div class="metric-score" id="relevance-score">0</div>
+                    </div>
+                    <div class="metric-bar">
+                        <div class="metric-bar-fill" id="relevance-bar"></div>
+                    </div>
+                    <div class="metric-feedback" id="relevance-feedback">-</div>
+                </div>
+            </div>
+            <div class="improved-prompt">
+                <div class="improved-prompt-header">
+                    <i class="fas fa-magic fa-xs"></i> IMPROVED PROMPT
+                </div>
+                <div class="improved-prompt-text" id="improved-prompt-text">-</div>
+                <button class="use-improved-prompt" id="use-improved-prompt">USE THIS PROMPT</button>
+            </div>
+        </div>
 
         <div class="loading-overlay" id="loading-overlay">
             <div class="spinner"></div>

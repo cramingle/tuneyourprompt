@@ -56,61 +56,222 @@ function analyzePromptQuality(prompt, goal) {
     relevance: { score: 0, feedback: '' }
   };
   
-  // Check clarity
-  const clarityKeywords = ['tone', 'style', 'format', 'audience', 'purpose'];
-  const hasClarity = clarityKeywords.some(keyword => prompt.toLowerCase().includes(keyword));
-  analysis.clarity.score = hasClarity ? 100 : 50;
-  analysis.clarity.feedback = hasClarity 
-    ? 'Good job specifying tone/style in your prompt!' 
-    : 'Consider specifying tone, style, or format in your prompt.';
+  // Check clarity - more sophisticated analysis
+  const clarityKeywords = ['tone', 'style', 'format', 'audience', 'purpose', 'voice', 'perspective', 'mood'];
+  const clarityMatches = clarityKeywords.filter(keyword => prompt.toLowerCase().includes(keyword));
+  const clarityScore = Math.min(100, clarityMatches.length * 25 + 25);
   
-  // Check detail
+  // Generate varied feedback for clarity
+  if (clarityScore >= 75) {
+    const feedbackOptions = [
+      `Great job specifying ${clarityMatches.join(' and ')} in your prompt!`,
+      `Your prompt clearly communicates ${clarityMatches.join(' and ')}, which helps guide the AI.`,
+      `The AI will understand what you want because you specified ${clarityMatches.join(' and ')}.`
+    ];
+    analysis.clarity.feedback = feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)];
+  } else if (clarityScore >= 50) {
+    const missingKeywords = clarityKeywords.filter(k => !clarityMatches.includes(k)).slice(0, 2);
+    const feedbackOptions = [
+      `Consider adding ${missingKeywords.join(' or ')} to make your prompt clearer.`,
+      `Your prompt could be clearer if you specified ${missingKeywords.join(' or ')}.`,
+      `To improve clarity, try mentioning ${missingKeywords.join(' and/or ')} in your prompt.`
+    ];
+    analysis.clarity.feedback = feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)];
+  } else {
+    const feedbackOptions = [
+      `Your prompt lacks clarity. Try specifying tone, style, or audience.`,
+      `The AI might struggle to understand exactly what you want. Consider adding details about tone and style.`,
+      `To get better results, clearly state the tone, style, and format you're looking for.`
+    ];
+    analysis.clarity.feedback = feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)];
+  }
+  analysis.clarity.score = clarityScore;
+  
+  // Check detail - more nuanced analysis
   const wordCount = prompt.split(/\s+/).length;
-  analysis.detail.score = wordCount > 10 ? 100 : wordCount > 5 ? 70 : 40;
-  analysis.detail.feedback = wordCount > 10 
-    ? 'Your prompt has good detail!' 
-    : 'Try adding more specific details to your prompt.';
+  const sentenceCount = prompt.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+  const avgWordsPerSentence = sentenceCount > 0 ? wordCount / sentenceCount : 0;
   
-  // Check relevance
-  const goalKeywords = goal.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-  const promptContainsGoalKeywords = goalKeywords.some(keyword => 
+  // Calculate detail score based on multiple factors
+  let detailScore = 0;
+  
+  // Word count factor (0-40 points)
+  if (wordCount >= 30) detailScore += 40;
+  else if (wordCount >= 20) detailScore += 30;
+  else if (wordCount >= 10) detailScore += 20;
+  else if (wordCount >= 5) detailScore += 10;
+  
+  // Sentence complexity factor (0-30 points)
+  if (avgWordsPerSentence >= 12) detailScore += 30;
+  else if (avgWordsPerSentence >= 8) detailScore += 20;
+  else if (avgWordsPerSentence >= 5) detailScore += 10;
+  
+  // Specific details factor (0-30 points)
+  const specificDetails = [
+    /\d+/,                           // Numbers
+    /specific/i, /particular/i,      // Specificity words
+    /example/i,                      // Examples
+    /color|colour|red|blue|green|yellow|black|white/i,  // Colors
+    /size|large|small|tiny|huge|big/i,  // Sizes
+    /first|second|third|next|then|after/i  // Sequence indicators
+  ];
+  
+  const detailMatches = specificDetails.filter(pattern => pattern.test(prompt));
+  detailScore += Math.min(30, detailMatches.length * 10);
+  
+  // Ensure score is between 0-100
+  detailScore = Math.min(100, detailScore);
+  
+  // Generate varied feedback for detail
+  if (detailScore >= 80) {
+    const feedbackOptions = [
+      `Your prompt has excellent detail with ${wordCount} words and specific elements.`,
+      `Great job providing specific details! The AI has plenty to work with.`,
+      `Your detailed prompt gives the AI clear direction with specific elements to include.`
+    ];
+    analysis.detail.feedback = feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)];
+  } else if (detailScore >= 50) {
+    const feedbackOptions = [
+      `Your prompt has decent detail, but could benefit from more specific examples.`,
+      `Consider adding more specific details like numbers, colors, or examples.`,
+      `The level of detail is good, but adding more specifics would help the AI understand better.`
+    ];
+    analysis.detail.feedback = feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)];
+  } else {
+    const feedbackOptions = [
+      `Your prompt lacks sufficient detail. Try adding specific examples or descriptions.`,
+      `Add more specific details to help the AI understand exactly what you want.`,
+      `To improve results, include specific examples, numbers, or descriptive elements.`
+    ];
+    analysis.detail.feedback = feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)];
+  }
+  analysis.detail.score = detailScore;
+  
+  // Check relevance - more sophisticated analysis
+  // Extract meaningful keywords from goal (excluding common words)
+  const commonWords = ['the', 'and', 'for', 'that', 'with', 'this', 'have', 'from', 'your', 'will', 'about'];
+  const goalWords = goal.toLowerCase().split(/\s+/)
+    .filter(word => word.length > 3 && !commonWords.includes(word));
+  
+  // Count how many goal keywords appear in the prompt
+  const matchedKeywords = goalWords.filter(keyword => 
     prompt.toLowerCase().includes(keyword)
   );
-  analysis.relevance.score = promptContainsGoalKeywords ? 100 : 50;
-  analysis.relevance.feedback = promptContainsGoalKeywords 
-    ? 'Your prompt aligns well with your goal!' 
-    : 'Make sure your prompt includes key elements from your goal.';
+  
+  // Calculate relevance score
+  const relevanceScore = Math.min(100, Math.round((matchedKeywords.length / Math.max(1, goalWords.length)) * 100));
+  
+  // Generate varied feedback for relevance
+  if (relevanceScore >= 80) {
+    const feedbackOptions = [
+      `Your prompt aligns very well with your goal, mentioning key elements like ${matchedKeywords.slice(0, 3).join(', ')}.`,
+      `Excellent job keeping your prompt relevant to your goal! The AI will understand what you're trying to achieve.`,
+      `The prompt clearly addresses your goal with relevant keywords and context.`
+    ];
+    analysis.relevance.feedback = feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)];
+  } else if (relevanceScore >= 50) {
+    const missingKeywords = goalWords.filter(keyword => !matchedKeywords.includes(keyword)).slice(0, 3);
+    const feedbackOptions = [
+      `Your prompt is somewhat relevant but misses key elements like ${missingKeywords.join(', ')}.`,
+      `Consider including more keywords from your goal such as ${missingKeywords.join(', ')}.`,
+      `To improve relevance, make sure to address ${missingKeywords.join(' and ')} from your goal.`
+    ];
+    analysis.relevance.feedback = feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)];
+  } else {
+    const feedbackOptions = [
+      `Your prompt doesn't seem to address your goal. Try including key elements from your goal.`,
+      `There's a disconnect between your goal and prompt. Make sure to include relevant keywords from your goal.`,
+      `To get better results, align your prompt more closely with your stated goal.`
+    ];
+    analysis.relevance.feedback = feedbackOptions[Math.floor(Math.random() * feedbackOptions.length)];
+  }
+  analysis.relevance.score = relevanceScore;
   
   return analysis;
 }
 
 // Generate improved prompt suggestion
 function generateImprovedPrompt(originalPrompt, goal, analysis) {
+  // Start with the original prompt
   let suggestion = originalPrompt;
+  
+  // Extract key elements from the goal
+  const goalWords = goal.toLowerCase().split(/\s+/).filter(word => word.length > 3);
+  const goalHasCreative = /creative|innovative|unique|original|novel/i.test(goal);
+  const goalHasFormal = /formal|professional|business|academic/i.test(goal);
+  const goalHasFunny = /funny|humorous|comedic|joke|amusing/i.test(goal);
+  const goalHasDetailed = /detailed|comprehensive|thorough|complete/i.test(goal);
+  const goalHasSimple = /simple|brief|concise|short/i.test(goal);
+  
+  // Track what improvements we've made
+  const improvements = [];
   
   // Add clarity if missing
   if (analysis.clarity.score < 70) {
-    const goalWords = goal.toLowerCase().split(/\s+/);
-    if (goalWords.includes('funny') && !suggestion.toLowerCase().includes('funny')) {
-      suggestion = suggestion.replace(/\.$/, '') + ' with a humorous tone.';
-    } else if (goalWords.includes('detailed') && !suggestion.toLowerCase().includes('detail')) {
-      suggestion = suggestion.replace(/\.$/, '') + ' with detailed descriptions.';
+    // Determine what tone/style to add based on goal
+    if (goalHasCreative && !suggestion.toLowerCase().includes('creative')) {
+      suggestion = suggestion.replace(/\.?\s*$/, '. Use a creative and innovative approach.');
+      improvements.push('creative tone');
+    } else if (goalHasFormal && !suggestion.toLowerCase().includes('formal')) {
+      suggestion = suggestion.replace(/\.?\s*$/, '. Maintain a formal and professional tone.');
+      improvements.push('formal tone');
+    } else if (goalHasFunny && !suggestion.toLowerCase().includes('funny')) {
+      suggestion = suggestion.replace(/\.?\s*$/, '. Use a humorous and entertaining style.');
+      improvements.push('humorous tone');
+    } else if (goalHasDetailed && !suggestion.toLowerCase().includes('detail')) {
+      suggestion = suggestion.replace(/\.?\s*$/, '. Include detailed descriptions and thorough explanations.');
+      improvements.push('detailed approach');
+    } else if (goalHasSimple && !suggestion.toLowerCase().includes('simple')) {
+      suggestion = suggestion.replace(/\.?\s*$/, '. Keep it simple, concise and to the point.');
+      improvements.push('concise approach');
     } else {
-      suggestion = suggestion.replace(/\.$/, '') + ' Be specific and clear.';
+      // If no specific tone detected, add a generic improvement
+      const clarityAdditions = [
+        '. Be specific about tone and style.',
+        '. Use a clear and engaging voice.',
+        '. Ensure the content is well-structured and focused.'
+      ];
+      suggestion = suggestion.replace(/\.?\s*$/, clarityAdditions[Math.floor(Math.random() * clarityAdditions.length)]);
+      improvements.push('clarity');
     }
+  }
+  
+  // Add detail if missing
+  if (analysis.detail.score < 70 && !improvements.includes('detailed approach')) {
+    const detailAdditions = [
+      ` Include specific examples and descriptive language.`,
+      ` Provide concrete details and vivid descriptions.`,
+      ` Use precise language and illustrative examples.`
+    ];
+    suggestion = suggestion.replace(/\.?\s*$/, '.' + detailAdditions[Math.floor(Math.random() * detailAdditions.length)]);
+    improvements.push('detail');
   }
   
   // Add relevance if missing
   if (analysis.relevance.score < 70) {
-    const goalKeywords = goal.toLowerCase().split(/\s+/).filter(word => word.length > 3);
-    const missingKeywords = goalKeywords.filter(keyword => 
+    const missingKeywords = goalWords.filter(keyword => 
       !suggestion.toLowerCase().includes(keyword)
-    );
+    ).slice(0, 3);
     
     if (missingKeywords.length > 0) {
-      suggestion = suggestion.replace(/\.$/, '') + 
-        ` Include these key elements: ${missingKeywords.join(', ')}.`;
+      suggestion = suggestion.replace(/\.?\s*$/, `. Make sure to address these key elements from the goal: ${missingKeywords.join(', ')}.`);
+      improvements.push('relevance');
     }
+  }
+  
+  // If we haven't made any improvements but scores are decent, add a generic enhancement
+  if (improvements.length === 0 && (analysis.clarity.score + analysis.detail.score + analysis.relevance.score) / 3 >= 70) {
+    const enhancements = [
+      ` For best results, specify your target audience and desired outcome.`,
+      ` Consider adding context about how the output will be used.`,
+      ` To further improve, mention any constraints or preferences you have.`
+    ];
+    suggestion = suggestion.replace(/\.?\s*$/, '.' + enhancements[Math.floor(Math.random() * enhancements.length)]);
+  }
+  
+  // Ensure the suggestion ends with proper punctuation
+  if (!/[.!?]$/.test(suggestion)) {
+    suggestion += '.';
   }
   
   return suggestion;
@@ -159,6 +320,7 @@ app.post('/api/evaluate', async (req, res) => {
     }
     
     let aiResponse;
+    let promptAnalysis = null;
     
     // Try to call external API or use mock data if specified/needed
     try {
@@ -251,6 +413,94 @@ app.post('/api/evaluate', async (req, res) => {
         throw new Error('Unexpected API response format');
       }
       
+      // Now that we have the AI response, let's ask the AI to analyze the prompt
+      if (aiResponse) {
+        try {
+          console.log('Requesting AI analysis of the prompt...');
+          
+          const analysisPrompt = `
+You are an expert in prompt engineering. Analyze this prompt and provide feedback:
+
+USER'S GOAL: "${goal}"
+
+USER'S PROMPT: "${prompt}"
+
+AI RESPONSE: "${aiResponse.substring(0, 500)}${aiResponse.length > 500 ? '...' : ''}"
+
+Provide a JSON object with the following structure:
+{
+  "clarity": {
+    "score": [0-100 score based on how clear the prompt is],
+    "feedback": "Specific, helpful feedback about the clarity of the prompt"
+  },
+  "detail": {
+    "score": [0-100 score based on the level of detail in the prompt],
+    "feedback": "Specific, helpful feedback about the detail level of the prompt"
+  },
+  "relevance": {
+    "score": [0-100 score based on how relevant the prompt is to the goal],
+    "feedback": "Specific, helpful feedback about the relevance of the prompt to the goal"
+  },
+  "improvedPrompt": "A suggested improved version of the prompt that addresses the issues identified"
+}
+
+Your analysis should be thoughtful and specific to this prompt, not generic. Focus on how well the prompt achieves the user's goal.
+`;
+          
+          // Set a timeout for the analysis request
+          const analysisController = new AbortController();
+          const analysisTimeoutId = setTimeout(() => {
+            console.log(`Analysis request timed out after ${timeoutDuration/1000} seconds`);
+            analysisController.abort();
+          }, timeoutDuration);
+          
+          const analysisResponse = await fetch(`${OLLAMA_API_URL}/ai/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'metis',
+              prompt: analysisPrompt,
+              stream: false
+            }),
+            signal: analysisController.signal
+          });
+          
+          // Clear the timeout
+          clearTimeout(analysisTimeoutId);
+          
+          if (analysisResponse.ok) {
+            const analysisData = await analysisResponse.json();
+            console.log('Analysis response:', JSON.stringify(analysisData).substring(0, 200) + '...');
+            
+            // Try to extract JSON from the response
+            let jsonStr = '';
+            
+            if (analysisData.type === 'text' && analysisData.content) {
+              jsonStr = analysisData.content;
+            } else if (analysisData.response) {
+              jsonStr = analysisData.response;
+            } else if (analysisData.content && analysisData.content.message) {
+              jsonStr = analysisData.content.message;
+            }
+            
+            // Extract JSON object from the response text
+            const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                promptAnalysis = JSON.parse(jsonMatch[0]);
+                console.log('Successfully parsed AI analysis:', promptAnalysis);
+              } catch (parseError) {
+                console.error('Failed to parse AI analysis JSON:', parseError);
+              }
+            }
+          }
+        } catch (analysisError) {
+          console.error('Error getting AI analysis:', analysisError);
+        }
+      }
+      
     } catch (error) {
       console.log('API error, using mock response:', error.message);
       // If API is not available or times out, generate a mock response
@@ -268,23 +518,44 @@ app.post('/api/evaluate', async (req, res) => {
     // Calculate match percentage
     const matchPercentage = calculateSimilarity(aiResponse, goal);
     
-    // Analyze prompt quality
-    const qualityAnalysis = analyzePromptQuality(prompt, goal);
+    // If we couldn't get AI analysis, fall back to our predefined analysis
+    let qualityAnalysis;
+    let improvedPrompt;
     
-    // Generate improved prompt suggestion
-    const improvedPrompt = generateImprovedPrompt(prompt, goal, qualityAnalysis);
+    if (promptAnalysis && 
+        promptAnalysis.clarity && 
+        promptAnalysis.detail && 
+        promptAnalysis.relevance && 
+        promptAnalysis.improvedPrompt) {
+      // Use the AI-generated analysis
+      qualityAnalysis = {
+        clarity: promptAnalysis.clarity,
+        detail: promptAnalysis.detail,
+        relevance: promptAnalysis.relevance
+      };
+      improvedPrompt = promptAnalysis.improvedPrompt;
+      console.log('Using AI-generated analysis');
+    } else {
+      // Fall back to predefined analysis
+      console.log('Falling back to predefined analysis');
+      qualityAnalysis = analyzePromptQuality(prompt, goal);
+      improvedPrompt = generateImprovedPrompt(prompt, goal, qualityAnalysis);
+    }
     
     // Return evaluation results
     res.json({
       aiResponse,
-      matchPercentage,
-      qualityAnalysis,
-      improvedPrompt
+      analysis: {
+        clarity: qualityAnalysis.clarity,
+        detail: qualityAnalysis.detail,
+        relevance: qualityAnalysis.relevance,
+        improvedPrompt
+      }
     });
     
   } catch (error) {
-    console.error('Error evaluating prompt:', error);
-    res.status(500).json({ error: 'Failed to evaluate prompt', details: error.message });
+    console.error('Error in /api/evaluate:', error);
+    res.status(500).json({ error: 'An error occurred during evaluation' });
   }
 });
 
