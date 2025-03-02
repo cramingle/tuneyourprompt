@@ -1,7 +1,17 @@
 const fs = require('fs');
 const path = require('path');
-const { createCanvas, loadImage } = require('canvas');
-const svg2img = require('svg2img');
+
+// Check if optional dependencies are available
+let canvas, svg2img;
+try {
+  canvas = require('canvas');
+  svg2img = require('svg2img');
+} catch (error) {
+  console.log('Optional dependencies for image generation are not available.');
+  console.log('This is normal in production environments like Vercel.');
+  console.log('Pre-generated images will be used instead.');
+  process.exit(0); // Exit gracefully
+}
 
 const sizes = [
   { name: 'favicon-16x16.png', size: 16 },
