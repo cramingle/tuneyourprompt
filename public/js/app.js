@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Create an AbortController for timeout
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
                 
                 // Call the API to evaluate the prompt
                 const response = await fetch('/api/evaluate', {
@@ -368,13 +368,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Store the analysis data for later use
                 window.currentAnalysisData = {
                     matchScore: data.matchPercentage || 0,
-                    clarityScore: data.qualityAnalysis?.clarity?.score || 0,
-                    detailScore: data.qualityAnalysis?.detail?.score || 0,
-                    relevanceScore: data.qualityAnalysis?.relevance?.score || 0,
-                    clarityFeedback: data.qualityAnalysis?.clarity?.feedback || 'Consider adding more clarity to your prompt.',
-                    detailFeedback: data.qualityAnalysis?.detail?.feedback || 'Add more specific details to your prompt.',
-                    relevanceFeedback: data.qualityAnalysis?.relevance?.feedback || 'Make sure your prompt aligns with your goal.',
-                    improvedPrompt: data.improvedPrompt || 'Please provide a more specific prompt with clear instructions and details.',
+                    clarityScore: data.analysis?.clarity?.score || 0,
+                    detailScore: data.analysis?.detail?.score || 0,
+                    relevanceScore: data.analysis?.relevance?.score || 0,
+                    clarityFeedback: data.analysis?.clarity?.feedback || 'Consider adding more clarity to your prompt.',
+                    detailFeedback: data.analysis?.detail?.feedback || 'Add more specific details to your prompt.',
+                    relevanceFeedback: data.analysis?.relevance?.feedback || 'Make sure your prompt aligns with your goal.',
+                    improvedPrompt: data.analysis?.improvedPrompt || 'Please provide a more specific prompt with clear instructions and details.',
                     textSimilarity: data.textSimilarity || 0,
                     originalPrompt: promptText
                 };
@@ -383,8 +383,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Raw server response:', {
                     matchPercentage: data.matchPercentage,
                     textSimilarity: data.textSimilarity,
-                    qualityAnalysis: data.qualityAnalysis,
-                    improvedPrompt: data.improvedPrompt
+                    analysis: data.analysis,
+                    improvedPrompt: data.analysis?.improvedPrompt
                 });
                 
                 // Log the analysis data for debugging
@@ -683,9 +683,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Set up metrics (clarity, detail, relevance)
         const metrics = [
-            { name: 'clarity', score: data.clarityScore || 80, feedback: data.clarityFeedback || 'Consider adding more clarity to your prompt.' },
-            { name: 'detail', score: data.detailScore || 70, feedback: data.detailFeedback || 'Add more specific details to improve your prompt.' },
-            { name: 'relevance', score: data.relevanceScore || 85, feedback: data.relevanceFeedback || 'Make sure your prompt aligns with your goal.' }
+            { name: 'clarity', score: data.clarityScore, feedback: data.clarityFeedback || 'Consider adding more clarity to your prompt.' },
+            { name: 'detail', score: data.detailScore, feedback: data.detailFeedback || 'Add more specific details to improve your prompt.' },
+            { name: 'relevance', score: data.relevanceScore, feedback: data.relevanceFeedback || 'Make sure your prompt aligns with your goal.' }
         ];
         
         metrics.forEach(metric => {
