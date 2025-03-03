@@ -348,278 +348,308 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listeners
     goalNextBtn.addEventListener('click', () => {
         const goalText = goalInput.value.trim();
-        
-        if (goalText === '') {
-            alert('Please enter your goal first.');
-            return;
+        if (goalText) {
+            // Track goal submission
+            trackEvent('goal_submitted', { length: goalText.length });
+            
+            // Add user message
+            addMessage('user', goalText);
+            
+            // Add system message
+            addSystemMessage('Great! Now write a prompt that you think will achieve this goal.');
+            
+            // Hide goal input, show prompt input
+            goalInputArea.classList.add('hidden');
+            promptInputArea.classList.remove('hidden');
+            
+            // Focus on prompt input
+            promptInput.focus();
+            
+            // Move to step 2 (Write)
+            updateProgress(2);
         }
-        
-        // Add user message
-        addMessage('user', goalText);
-        
-        // Add system response
-        addMessage('system', ` Great! Now write a prompt that you think will get the AI to create what you want.`);
-        
-        // Move to step 2
-        updateProgress(2);
-        
-        // Focus on prompt input
-        promptInput.focus();
     });
     
     promptNextBtn.addEventListener('click', async () => {
         const promptText = promptInput.value.trim();
-        const goalText = goalInput.value.trim();
         
-        if (promptText === '') {
-            alert('Please enter your prompt first.');
-            return;
-        }
-        
-        // Add user message
-        addMessage('user', promptText);
-        
-        // Show loading overlay
-        showLoadingOverlay('Generating result');
-        
-        // Track retries
-        let retries = 0;
-        const maxRetries = 2;
-        
-        async function attemptEvaluation() {
-            try {
-                // Update loading message
-                if (retries > 0) {
-                    loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
-                }
-                
-                // Create an AbortController for timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
-                
-                // Call the API to evaluate the prompt
-                const response = await fetch('/api/evaluate', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        prompt: promptText,
-                        goal: goalText
-                    }),
-                    signal: controller.signal
-                });
-                
-                // Clear the timeout
-                clearTimeout(timeoutId);
-                
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    const errorMessage = errorData.message || errorData.error || `Server responded with status: ${response.status}`;
-                    console.error('Error response data:', errorData);
+        if (promptText) {
+            // Track prompt submission
+            trackEvent('prompt_submitted', { length: promptText.length });
+            
+            // Add user message
+            addMessage('user', promptText);
+            
+            // Show loading overlay
+            showLoadingOverlay('ANALYZING PROMPT');
+            
+            // Get the goal text
+            const goalText = goalInput.value.trim();
+            
+            // Track retries
+            let retries = 0;
+            const maxRetries = 2;
+            
+            async function attemptEvaluation() {
+                try {
+                    // Update loading message
+                    if (retries > 0) {
+                        loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
+                    }
                     
-                    throw new Error(errorMessage);
-                }
-                
-                const data = await response.json();
-                
-                // Hide loading overlay
-                hideLoadingOverlay();
-                
-                // Add AI response message with typing animation
-                if (data.aiResponse) {
-                    console.log('AI Response received:', data.aiResponse.substring(0, 100) + '...');
-                    addMessage('ai', data.aiResponse, '', true);
-                } else {
-                    console.log('No AI response received from server');
-                    addMessage('system', `${createFeatherIcon('alert-triangle')} No response received from the AI. Please try again.`);
-                    return; // Exit early if no response
-                }
-                
-                // Store the analysis data for later use
-                window.currentAnalysisData = {
-                    matchScore: data.matchPercentage || 0,
-                    clarityScore: data.analysis?.clarity?.score || 0,
-                    detailScore: data.analysis?.detail?.score || 0,
-                    relevanceScore: data.analysis?.relevance?.score || 0,
-                    clarityFeedback: data.analysis?.clarity?.feedback || 'Consider adding more clarity to your prompt.',
-                    detailFeedback: data.analysis?.detail?.feedback || 'Add more specific details to your prompt.',
-                    relevanceFeedback: data.analysis?.relevance?.feedback || 'Make sure your prompt aligns with your goal.',
-                    improvedPrompt: data.analysis?.improvedPrompt || 'Please provide a more specific prompt with clear instructions and details.',
-                    textSimilarity: data.textSimilarity || 0,
-                    originalPrompt: promptText
-                };
-                
-                // Log the raw data from the server for debugging
-                console.log('Raw server response:', {
-                    matchPercentage: data.matchPercentage,
-                    textSimilarity: data.textSimilarity,
-                    analysis: data.analysis,
-                    improvedPrompt: data.analysis?.improvedPrompt
-                });
-                
-                // Log the analysis data for debugging
-                console.log('Analysis data:', window.currentAnalysisData);
-                
-                // Move to step 3 (Result)
-                updateProgress(3);
-                
-                // Clear the try-again-area and add the analyze button
-                const tryAgainArea = document.getElementById('try-again-area');
-                tryAgainArea.innerHTML = '';
-                
-                const buttonRow = document.createElement('div');
-                buttonRow.className = 'button-row';
-                
-                // Create analyze button
-                const analyzeBtn = document.createElement('button');
-                analyzeBtn.className = 'analyze-button';
-                analyzeBtn.innerHTML = createFeatherIcon('bar-chart-2');
-                analyzeBtn.title = 'Analyze This Prompt';
-                analyzeBtn.id = 'analyze-prompt-btn';
-                analyzeBtn.addEventListener('click', () => {
-                    // Update analysis panel with the data
-                    updateAnalysisPanel(window.currentAnalysisData);
+                    // Create an AbortController for timeout
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
                     
-                    // Show analysis panel
-                    analysisPanel.classList.remove('hidden');
+                    // Call the API to evaluate the prompt
+                    const response = await fetch('/api/evaluate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            prompt: promptText,
+                            goal: goalText
+                        }),
+                        signal: controller.signal
+                    });
                     
-                    // Move to step 4 (Analyze)
-                    updateProgress(4);
-                });
-                
-                // Create Try Again button
-                const tryAgainBtn = document.createElement('button');
-                tryAgainBtn.className = 'try-again-button';
-                tryAgainBtn.innerHTML = createFeatherIcon('refresh-cw');
-                tryAgainBtn.title = 'Try Again';
-                tryAgainBtn.addEventListener('click', () => {
-                    // Clear the prompt input
-                    promptInput.value = '';
+                    // Clear the timeout
+                    clearTimeout(timeoutId);
                     
-                    // Add system message
-                    addMessage('system', createFeatherIcon('refresh-cw') + ' Let\'s try another prompt for the same goal.');
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        const errorMessage = errorData.message || errorData.error || `Server responded with status: ${response.status}`;
+                        console.error('Error response data:', errorData);
+                        
+                        throw new Error(errorMessage);
+                    }
                     
-                    // Hide panels if they're open
-                    analysisPanel.classList.add('hidden');
-                    finalResultPanel.classList.add('hidden');
+                    const data = await response.json();
                     
-                    // Move back to step 2
-                    updateProgress(2);
+                    // Hide loading overlay
+                    hideLoadingOverlay();
                     
-                    // Focus on prompt input
-                    promptInput.focus();
-                });
-                
-                // Create Start Over button
-                const startOverBtn = document.createElement('button');
-                startOverBtn.className = 'start-over-button';
-                startOverBtn.innerHTML = createFeatherIcon('rotate-ccw');
-                startOverBtn.title = 'Start Over';
-                startOverBtn.addEventListener('click', () => {
-                    // Confirm before starting over
-                    if (confirm('Are you sure you want to start over with a new goal?')) {
-                        // Clear inputs
-                        goalInput.value = '';
+                    // Add AI response message with typing animation
+                    if (data.aiResponse) {
+                        console.log('AI Response received:', data.aiResponse.substring(0, 100) + '...');
+                        addMessage('ai', data.aiResponse, '', true);
+                    } else {
+                        console.log('No AI response received from server');
+                        addMessage('system', `${createFeatherIcon('alert-triangle')} No response received from the AI. Please try again.`);
+                        return; // Exit early if no response
+                    }
+                    
+                    // Store the analysis data for later use
+                    window.currentAnalysisData = {
+                        matchScore: data.matchPercentage || 0,
+                        clarityScore: data.analysis?.clarity?.score || 0,
+                        detailScore: data.analysis?.detail?.score || 0,
+                        relevanceScore: data.analysis?.relevance?.score || 0,
+                        clarityFeedback: data.analysis?.clarity?.feedback || 'Consider adding more clarity to your prompt.',
+                        detailFeedback: data.analysis?.detail?.feedback || 'Add more specific details to your prompt.',
+                        relevanceFeedback: data.analysis?.relevance?.feedback || 'Make sure your prompt aligns with your goal.',
+                        improvedPrompt: data.analysis?.improvedPrompt || 'Please provide a more specific prompt with clear instructions and details.',
+                        textSimilarity: data.textSimilarity || 0,
+                        originalPrompt: promptText
+                    };
+                    
+                    // Log the raw data from the server for debugging
+                    console.log('Raw server response:', {
+                        matchPercentage: data.matchPercentage,
+                        textSimilarity: data.textSimilarity,
+                        analysis: data.analysis,
+                        improvedPrompt: data.analysis?.improvedPrompt
+                    });
+                    
+                    // Log the analysis data for debugging
+                    console.log('Analysis data:', window.currentAnalysisData);
+                    
+                    // Move to step 3 (Result)
+                    updateProgress(3);
+                    
+                    // Clear the try-again-area and add the analyze button
+                    const tryAgainArea = document.getElementById('try-again-area');
+                    tryAgainArea.innerHTML = '';
+                    
+                    const buttonRow = document.createElement('div');
+                    buttonRow.className = 'button-row';
+                    
+                    // Create analyze button
+                    const analyzeBtn = document.createElement('button');
+                    analyzeBtn.className = 'analyze-button';
+                    analyzeBtn.innerHTML = `${createFeatherIcon('bar-chart-2')} Analyze`;
+                    analyzeBtn.title = 'Analyze This Prompt';
+                    analyzeBtn.id = 'analyze-prompt-btn';
+                    analyzeBtn.addEventListener('click', () => {
+                        // Track analyze button click
+                        trackEvent('analyze_button_clicked', {
+                            matchPercentage: window.currentAnalysisData.matchPercentage
+                        });
+                        
+                        // Update analysis panel with the data
+                        updateAnalysisPanel(window.currentAnalysisData);
+                        
+                        // Show analysis panel
+                        analysisPanel.classList.remove('hidden');
+                        
+                        // Move to step 4 (Analyze)
+                        updateProgress(4);
+                    });
+                    
+                    // Create Try Again button
+                    const tryAgainBtn = document.createElement('button');
+                    tryAgainBtn.className = 'try-again-button';
+                    tryAgainBtn.innerHTML = `${createFeatherIcon('refresh-cw')} Try Again`;
+                    tryAgainBtn.title = 'Try Again';
+                    tryAgainBtn.addEventListener('click', () => {
+                        // Clear the prompt input
                         promptInput.value = '';
+                        
+                        // Add system message
+                        addMessage('system', createFeatherIcon('refresh-cw') + ' Let\'s try another prompt for the same goal.');
                         
                         // Hide panels if they're open
                         analysisPanel.classList.add('hidden');
                         finalResultPanel.classList.add('hidden');
                         
-                        // Clear chat messages except the first welcome message
-                        while (chatMessages.children.length > 1) {
-                            chatMessages.removeChild(chatMessages.lastChild);
-                        }
+                        // Move back to step 2
+                        updateProgress(2);
                         
-                        // Add system message
-                        addMessage('system', createFeatherIcon('rotate-ccw') + ' Let\'s start over with a new goal.');
-                        
-                        // Move back to step 1
-                        updateProgress(1);
-                        
-                        // Focus on goal input
-                        goalInput.focus();
-                    }
-                });
-                
-                // Create Continue Chat button
-                const continueChatBtn = document.createElement('button');
-                continueChatBtn.className = 'continue-chat-button';
-                continueChatBtn.innerHTML = createFeatherIcon('message-circle');
-                continueChatBtn.title = 'Continue Chat';
-                continueChatBtn.addEventListener('click', () => {
-                    // Create a chat input area
-                    const chatInputArea = document.createElement('div');
-                    chatInputArea.className = 'input-area';
-                    chatInputArea.innerHTML = `
-                        <div class="input-container">
-                            <textarea id="continue-chat-input" placeholder="Continue the conversation..."></textarea>
-                            <button class="send-button" id="send-chat-btn" title="Send Message">
-                                <i data-feather="send" class="feather"></i>
-                            </button>
-                        </div>
-                    `;
+                        // Focus on prompt input
+                        promptInput.focus();
+                    });
                     
-                    // Replace the button row with the chat input area
-                    tryAgainArea.innerHTML = '';
-                    tryAgainArea.appendChild(chatInputArea);
-                    
-                    // Initialize Feather icons in the newly added elements
-                    feather.replace();
-                    
-                    // Focus on the chat input
-                    document.getElementById('continue-chat-input').focus();
-                    
-                    // Add event listener for the send button
-                    document.getElementById('send-chat-btn').addEventListener('click', sendContinueChatMessage);
-                    
-                    // Add event listener for Enter key
-                    document.getElementById('continue-chat-input').addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            sendContinueChatMessage();
+                    // Create Start Over button
+                    const startOverBtn = document.createElement('button');
+                    startOverBtn.className = 'start-over-button';
+                    startOverBtn.innerHTML = `${createFeatherIcon('rotate-ccw')} Start Over`;
+                    startOverBtn.title = 'Start Over';
+                    startOverBtn.addEventListener('click', () => {
+                        // Confirm before starting over
+                        if (confirm('Are you sure you want to start over with a new goal?')) {
+                            // Clear inputs
+                            goalInput.value = '';
+                            promptInput.value = '';
+                            
+                            // Hide panels if they're open
+                            analysisPanel.classList.add('hidden');
+                            finalResultPanel.classList.add('hidden');
+                            
+                            // Clear chat messages except the first welcome message
+                            while (chatMessages.children.length > 1) {
+                                chatMessages.removeChild(chatMessages.lastChild);
+                            }
+                            
+                            // Add system message
+                            addMessage('system', createFeatherIcon('rotate-ccw') + ' Let\'s start over with a new goal.');
+                            
+                            // Move back to step 1
+                            updateProgress(1);
+                            
+                            // Focus on goal input
+                            goalInput.focus();
                         }
                     });
                     
-                    // Add a system message
-                    addMessage('system', ' Continue your conversation with the AI');
-                });
-                
-                // Create a left side container for try again and start over buttons
-                const leftButtonsContainer = document.createElement('div');
-                leftButtonsContainer.className = 'left-buttons';
-                leftButtonsContainer.appendChild(tryAgainBtn);
-                leftButtonsContainer.appendChild(startOverBtn);
-                
-                // Add the left buttons container to the button row
-                buttonRow.appendChild(leftButtonsContainer);
-                
-                // Create a right side container for the analyze button and continue chat button
-                const rightButtonsContainer = document.createElement('div');
-                rightButtonsContainer.className = 'right-buttons';
-                rightButtonsContainer.appendChild(analyzeBtn);
-                rightButtonsContainer.appendChild(continueChatBtn);
-                
-                // Add the right buttons container to the button row
-                buttonRow.appendChild(rightButtonsContainer);
-                
-                // Add the button row to the try-again-area
-                tryAgainArea.appendChild(buttonRow);
-
-                // Initialize Feather icons in the newly added buttons
-                feather.replace();
-                
-            } catch (error) {
-                console.error('Error:', error);
-                
-                // Check if it's a timeout error
-                if (error.name === 'AbortError') {
-                    console.log('Request timed out');
+                    // Create Continue Chat button
+                    const continueChatBtn = document.createElement('button');
+                    continueChatBtn.className = 'continue-chat-button';
+                    continueChatBtn.innerHTML = `${createFeatherIcon('message-circle')} Continue Chat`;
+                    continueChatBtn.title = 'Continue Chat';
+                    continueChatBtn.addEventListener('click', () => {
+                        // Create a chat input area
+                        const chatInputArea = document.createElement('div');
+                        chatInputArea.className = 'input-area';
+                        chatInputArea.innerHTML = `
+                            <div class="input-container">
+                                <textarea id="continue-chat-input" placeholder="Continue the conversation..."></textarea>
+                                <button class="send-button" id="send-chat-btn" title="Send Message">
+                                    <i data-feather="send" class="feather"></i>
+                                </button>
+                            </div>
+                        `;
+                        
+                        // Replace the button row with the chat input area
+                        tryAgainArea.innerHTML = '';
+                        tryAgainArea.appendChild(chatInputArea);
+                        
+                        // Initialize Feather icons in the newly added elements
+                        feather.replace();
+                        
+                        // Focus on the chat input
+                        document.getElementById('continue-chat-input').focus();
+                        
+                        // Add event listener for the send button
+                        document.getElementById('send-chat-btn').addEventListener('click', sendContinueChatMessage);
+                        
+                        // Add event listener for Enter key
+                        document.getElementById('continue-chat-input').addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                sendContinueChatMessage();
+                            }
+                        });
+                        
+                        // Add a system message
+                        addMessage('system', ' Continue your conversation with the AI');
+                    });
                     
-                    if (retries < maxRetries) {
+                    // Create a left side container for try again and start over buttons
+                    const leftButtonsContainer = document.createElement('div');
+                    leftButtonsContainer.className = 'left-buttons';
+                    leftButtonsContainer.appendChild(tryAgainBtn);
+                    leftButtonsContainer.appendChild(startOverBtn);
+                    
+                    // Add the left buttons container to the button row
+                    buttonRow.appendChild(leftButtonsContainer);
+                    
+                    // Create a right side container for the analyze button and continue chat button
+                    const rightButtonsContainer = document.createElement('div');
+                    rightButtonsContainer.className = 'right-buttons';
+                    rightButtonsContainer.appendChild(analyzeBtn);
+                    rightButtonsContainer.appendChild(continueChatBtn);
+                    
+                    // Add the right buttons container to the button row
+                    buttonRow.appendChild(rightButtonsContainer);
+                    
+                    // Add the button row to the try-again-area
+                    tryAgainArea.appendChild(buttonRow);
+
+                    // Initialize Feather icons in the newly added buttons
+                    feather.replace();
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    
+                    // Check if it's a timeout error
+                    if (error.name === 'AbortError') {
+                        console.log('Request timed out');
+                        
+                        if (retries < maxRetries) {
+                            retries++;
+                            console.log(`Retry attempt ${retries}/${maxRetries} after timeout`);
+                            
+                            // Update loading message
+                            loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
+                            
+                            // Wait a moment before retrying
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            
+                            // Try again
+                            return attemptEvaluation();
+                        } else {
+                            // Hide loading overlay
+                            hideLoadingOverlay();
+                            
+                            addMessage('system', createFeatherIcon('clock') + ' The request timed out. The server might be busy. Please try again later.');
+                            
+                            // Move to step 3 anyway so user can try again
+                            updateProgress(3);
+                        }
+                    } else if (retries < maxRetries) {
                         retries++;
-                        console.log(`Retry attempt ${retries}/${maxRetries} after timeout`);
+                        console.log(`Retry attempt ${retries}/${maxRetries}`);
                         
                         // Update loading message
                         loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
@@ -633,37 +663,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Hide loading overlay
                         hideLoadingOverlay();
                         
-                        addMessage('system', createFeatherIcon('clock') + ' The request timed out. The server might be busy. Please try again later.');
+                        addMessage('system', createFeatherIcon('alert-triangle') + ' An error occurred while evaluating your prompt: ' + error.message + '. Please try again later.');
                         
                         // Move to step 3 anyway so user can try again
                         updateProgress(3);
                     }
-                } else if (retries < maxRetries) {
-                    retries++;
-                    console.log(`Retry attempt ${retries}/${maxRetries}`);
-                    
-                    // Update loading message
-                    loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
-                    
-                    // Wait a moment before retrying
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                    
-                    // Try again
-                    return attemptEvaluation();
-                } else {
-                    // Hide loading overlay
-                    hideLoadingOverlay();
-                    
-                    addMessage('system', createFeatherIcon('alert-triangle') + ' An error occurred while evaluating your prompt: ' + error.message + '. Please try again later.');
-                    
-                    // Move to step 3 anyway so user can try again
-                    updateProgress(3);
                 }
             }
+            
+            // Start the evaluation process
+            attemptEvaluation();
         }
-        
-        // Start the evaluation process
-        attemptEvaluation();
     });
     
     // Handle textarea auto-resize
@@ -910,7 +920,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create Try Again button
         const tryAgainBtn = document.createElement('button');
         tryAgainBtn.className = 'try-again-button';
-        tryAgainBtn.innerHTML = createFeatherIcon('refresh-cw');
+        tryAgainBtn.innerHTML = `${createFeatherIcon('refresh-cw')} Try Again`;
         tryAgainBtn.title = 'Try Again';
         tryAgainBtn.addEventListener('click', () => {
             // Clear the prompt input
@@ -933,7 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create Start Over button
         const startOverBtn = document.createElement('button');
         startOverBtn.className = 'start-over-button';
-        startOverBtn.innerHTML = createFeatherIcon('rotate-ccw');
+        startOverBtn.innerHTML = `${createFeatherIcon('rotate-ccw')} Start Over`;
         startOverBtn.title = 'Start Over';
         startOverBtn.addEventListener('click', () => {
             // Confirm before starting over
@@ -965,7 +975,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create Continue Chat button
         const continueChatBtn = document.createElement('button');
         continueChatBtn.className = 'continue-chat-button';
-        continueChatBtn.innerHTML = createFeatherIcon('message-circle');
+        continueChatBtn.innerHTML = `${createFeatherIcon('message-circle')} Continue Chat`;
         continueChatBtn.title = 'Continue Chat';
         continueChatBtn.addEventListener('click', () => {
             // Create a chat input area
@@ -1014,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add the left buttons container to the button row
         buttonRow.appendChild(leftButtonsContainer);
         
-        // Create a right side container for the continue chat button
+        // Create a right side container for the analyze button and continue chat button
         const rightButtonsContainer = document.createElement('div');
         rightButtonsContainer.className = 'right-buttons';
         rightButtonsContainer.appendChild(continueChatBtn);
@@ -1519,163 +1529,55 @@ Please respond to the user's new message, taking into account the context of the
     // Add event listener for "Use This Prompt" button
     const useImprovedPromptBtn = document.getElementById('use-improved-prompt');
     if (useImprovedPromptBtn) {
-        useImprovedPromptBtn.addEventListener('click', async () => {
-            // Track retries
-            let retries = 0;
-            const maxRetries = 2;
+        useImprovedPromptBtn.addEventListener('click', () => {
+            const improvedPrompt = document.getElementById('improved-prompt-text').textContent;
             
-            async function attemptGeneration() {
-                try {
-                    const improvedPrompt = window.currentAnalysisData?.improvedPrompt || 
-                        document.getElementById('improved-prompt-text').innerText;
-                    const goalText = document.getElementById('goal-input').value.trim();
-                    
-                    if (!improvedPrompt) return;
-                    
-                    // Update loading message if retrying
-                    if (retries > 0) {
-                        loadingMessage.textContent = `RETRY ATTEMPT ${retries}/${maxRetries}...`;
-                    } else {
-                        console.log('Using improved prompt:', improvedPrompt);
-                        
-                        // Hide the analysis panel
-                        analysisPanel.classList.add('hidden');
-                        
-                        // Add a message indicating we're using the improved prompt
-                        addMessage('system', createFeatherIcon('magic') + ' Using the improved prompt to generate a better response');
-                        
-                        // Show loading overlay
-                        showLoadingOverlay('Generating response');
-                        loadingMessage.textContent = 'GENERATING RESPONSE...';
-                    }
-                    
-                    console.log('Sending request to /api/generate with prompt:', improvedPrompt.substring(0, 100) + '...');
-                    
-                    // Create an AbortController for timeout
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
-                    
-                    const response = await fetch('/api/generate', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            prompt: improvedPrompt,
-                            goal: goalText
-                        }),
-                        signal: controller.signal
-                    });
-                    
-                    // Clear the timeout
-                    clearTimeout(timeoutId);
-                    
-                    console.log('Response status:', response.status);
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        const errorMessage = errorData.message || errorData.error || `Server responded with status: ${response.status}`;
-                        console.error('Error response data:', errorData);
-                        
-                        throw new Error(errorMessage);
-                    }
-                    
-                    const data = await response.json();
-                    
-                    // Hide loading overlay
-                    hideLoadingOverlay();
-                    
-                    // Add a separator line in the chat
-                    const separator = document.createElement('div');
-                    separator.className = 'chat-separator';
-                    separator.innerHTML = '<span>Final Result</span>';
-                    chatMessages.appendChild(separator);
-                    
-                    // Ensure we scroll to the separator
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                    
-                    // Add the AI response to the chat with animation
-                    const messagePromise = addMessage('ai', data.response, '', true);
-                    
-                    // After the message is added and animation completes, update progress and add buttons
-                    if (messagePromise && messagePromise.then) {
-                        messagePromise.then(() => {
-                            // Update progress to step 5 (Final)
-                            updateProgress(5);
-                            
-                            // Add Try Again and Start Over buttons
-                            addFinalStepButtons();
-                            
-                            // Final scroll to ensure everything is visible
-                            setTimeout(() => {
-                                chatMessages.scrollTop = chatMessages.scrollHeight;
-                            }, 100);
-                        });
-                    } else {
-                        // If no promise was returned (no animation), update immediately
-                        updateProgress(5);
-                        addFinalStepButtons();
-                        
-                        // Final scroll to ensure everything is visible
-                        setTimeout(() => {
-                            chatMessages.scrollTop = chatMessages.scrollHeight;
-                        }, 100);
-                    }
-                    
-                } catch (error) {
-                    console.error('Error generating response:', error);
-                    
-                    // Check if it's a timeout error
-                    if (error.name === 'AbortError') {
-                        console.log('Request timed out');
-                        
-                        if (retries < maxRetries) {
-                            retries++;
-                            console.log(`Retry attempt ${retries}/${maxRetries} after timeout`);
-                            
-                            // Wait a moment before retrying
-                            await new Promise(resolve => setTimeout(resolve, 2000));
-                            
-                            // Try again
-                            return attemptGeneration();
-                        } else {
-                            // Hide loading overlay
-                            hideLoadingOverlay();
-                            
-                            addMessage('system', createFeatherIcon('clock') + ' The request timed out. The server might be busy. Please try again later.');
-                        }
-                    } else if (error.message.includes('aborted') || error.message.includes('Failed to generate') || response?.status === 500) {
-                        // Server error or aborted request
-                        if (retries < maxRetries) {
-                            retries++;
-                            console.log(`Retry attempt ${retries}/${maxRetries} after server error`);
-                            
-                            // Wait a moment before retrying
-                            await new Promise(resolve => setTimeout(resolve, 2000));
-                            
-                            // Try again
-                            return attemptGeneration();
-                        } else {
-                            // Hide loading overlay
-                            hideLoadingOverlay();
-                            
-                            addMessage('system', createFeatherIcon('alert-triangle') + ' The server encountered an error. Please try again later.');
-                        }
-                    } else {
-                        // Other errors
-                        hideLoadingOverlay();
-                        addMessage('system', createFeatherIcon('alert-triangle') + ' Failed to generate response. Please try again.');
-                    }
-                } finally {
-                    if (loadingOverlay.style.display !== 'none') {
-                        hideLoadingOverlay();
-                    }
-                }
+            // Track improved prompt usage
+            trackEvent('improved_prompt_used', {
+                matchPercentage: window.currentAnalysisData.matchPercentage
+            });
+            
+            // Hide analysis panel
+            analysisPanel.classList.add('hidden');
+            
+            // Set the prompt input value to the improved prompt
+            promptInput.value = improvedPrompt;
+            
+            // Add system message
+            addMessage('system', createFeatherIcon('zap') + ' Using the improved prompt. Click send to try it.');
+            
+            // Focus on prompt input
+            promptInput.focus();
+        });
+    }
+
+    // Function to track analytics events
+    function trackEvent(eventName, properties = {}) {
+        try {
+            // Track with Vercel Analytics client-side if available
+            if (window.va) {
+                window.va('event', {
+                    name: eventName,
+                    ...properties
+                });
             }
             
-            // Start the generation process
-            attemptGeneration();
-        });
+            // Also send to our server-side tracking
+            fetch('/api/track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    event: eventName,
+                    properties
+                })
+            }).catch(error => {
+                console.error('Error sending analytics:', error);
+            });
+        } catch (error) {
+            console.error('Analytics error:', error);
+        }
     }
 
     // Initialize Feather icons

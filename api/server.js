@@ -4,6 +4,10 @@ const fetch = require('node-fetch');
 const path = require('path');
 const cosineSimilarity = require('compute-cosine-similarity');
 const dotenv = require('dotenv');
+const { Analytics } = require('@vercel/analytics/node');
+
+// Initialize Vercel Analytics
+const analytics = new Analytics();
 
 // Load environment variables
 dotenv.config();
@@ -719,6 +723,28 @@ app.get('/api/health', (req, res) => {
       console.log('Health check error:', error.message);
       return res.json({ status: 'error', error: error.message });
     });
+});
+
+// Analytics endpoint
+app.post('/api/track', async (req, res) => {
+  try {
+    const { event, properties } = req.body;
+    
+    if (!event) {
+      return res.status(400).json({ error: 'Event name is required' });
+    }
+    
+    // Track the event with Vercel Analytics
+    await analytics.track({
+      event,
+      properties
+    });
+    
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Analytics error:', error);
+    res.status(500).json({ error: 'Failed to track event' });
+  }
 });
 
 // Serve the main HTML file for all other routes

@@ -578,35 +578,43 @@ button {
 }
 
 .try-again-button {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    background: linear-gradient(135deg, #FF5722, #F4511E);
     color: white;
-    box-shadow: var(--glow);
+    box-shadow: 0 0 10px rgba(255, 87, 34, 0.4);
+    padding: 8px 16px;
+    border-radius: 20px;
 }
 
 .try-again-button:hover {
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    background: linear-gradient(135deg, #F4511E, #FF5722);
     transform: translateY(-2px);
-    box-shadow: 0 0 15px rgba(124, 77, 255, 0.5);
+    box-shadow: 0 0 15px rgba(255, 87, 34, 0.5);
 }
 
 .start-over-button {
-    background-color: var(--system-message-bg);
-    color: var(--light-text);
-    border: 1px solid var(--border-color);
+    background: linear-gradient(135deg, #607D8B, #455A64);
+    color: white;
+    box-shadow: 0 0 10px rgba(96, 125, 139, 0.4);
+    padding: 8px 16px;
+    border-radius: 20px;
 }
 
 .start-over-button:hover {
-    background-color: #333333;
+    background: linear-gradient(135deg, #455A64, #607D8B);
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(96, 125, 139, 0.5);
 }
 
 .analyze-button {
-    background: linear-gradient(135deg, var(--secondary-color), #00B8D4);
-    color: #121212;
-    box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+    background: linear-gradient(135deg, #00E5FF, #00B8D4);
+    color: white;
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+    padding: 8px 16px;
+    border-radius: 20px;
 }
 
 .analyze-button:hover {
-    background: linear-gradient(135deg, #00B8D4, var(--secondary-color));
+    background: linear-gradient(135deg, #00B8D4, #00E5FF);
     transform: translateY(-2px);
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
 }
